@@ -1,4 +1,5 @@
 import sys
+from typing import List
 from typing import TextIO
 
 class Translate:
@@ -40,7 +41,7 @@ class Translate:
                 self.write_assembly(parsed_components, file_stream)
     
 
-    def parse(self, line: str) -> list:
+    def parse(self, line: str) -> List:
         components = line.split()
         if components[0] not in self.valid_cmds:
             print(f"Error: '{components[0]}' is not a valid command.")
@@ -235,7 +236,7 @@ class Translate:
         self.push(file, register=self.R3)
 
     
-    def write_assembly(self, components: list[str], file: TextIO) -> None:
+    def write_assembly(self, components: List[str], file: TextIO) -> None:
         cmd = components[0]
 
         if len(components) == 1:
