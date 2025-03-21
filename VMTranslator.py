@@ -15,12 +15,11 @@ class Translate:
         "local", "argument", "this", "that", "constant", "static", "temp", "pointer"
     }
 
+    label_idx = {}
+
     R1 = "@R13"
     R2 = "@R14"
     R3 = "@R15"
-
-    op_count = 0
-
 
     def __init__(self, ref):
         self.ref = ref
@@ -33,23 +32,25 @@ class Translate:
         with open(f'{self.output_file}', "w") as file_stream:
             self.file_stream = file_stream
 
-            for line in lines:
+            for i, line in enumerate(lines):
                 stripped_line = line.partition("//")[0].strip()
                 
                 if not stripped_line:
                     continue
 
                 parsed_components = self.parse(stripped_line)
-                self.write_to_asm(parsed_components)
+                self.write_to_asm(i, parsed_components)
     
 
     def parse(self, line: str) -> List:
         components = line.split()
-        if components[0] not in self.valid_cmds:
-            print(f"Error: '{components[0]}' is not a valid command.")
+        cmd = components[0]
+
+        if cmd not in self.valid_cmds:
+            print(f"Error: '{cmd}' is not a valid command.")
             sys.exit(1)
 
-        if len(components) > 1:
+        if cmd in ["pop", "push"]:
             _, segment, val = components
 
             if segment not in self.valid_segments:
@@ -193,7 +194,7 @@ class Translate:
         self.write("@SP")
         self.write("M=M+1")
     
-    def perform_arithmetic(self, cmd: str) -> None:
+    def perform_arithmetic(self, id: int, cmd: str) -> None:
         self.pop()
         self.write("D=M")
 
@@ -228,37 +229,34 @@ class Translate:
         elif cmd == "or":
             self.write("D=D|M")
         else:
+            self.write("D=M-D")
+            self.write(f"@SET_TRUE{id}")
+
             if cmd == "eq":
-                self.write("D=M-D")
-                self.write(f"@SET_TRUE{self.op_count}")
                 self.write("D;JEQ")
             elif cmd == "gt":
-                self.write("D=M-D")
-                self.write(f"@SET_TRUE{self.op_count}")
                 self.write("D;JGT")
             elif cmd == "lt":
-                self.write("D=M-D")
-                self.write(f"@SET_TRUE{self.op_count}")
                 self.write("D;JLT")
 
             self.write("D=0") # set D to false
-            self.write(f"@END{self.op_count}")
+            self.write(f"@END{id}")
             self.write("0;JMP")
 
-            self.write(f"(SET_TRUE{self.op_count})")
+            self.write(f"(SET_TRUE{id})")
             self.write("D=-1") # set D to true (-1, aka 1111111111111111)
 
-            self.write(f"(END{self.op_count})")
+            self.write(f"(END{id})")
             self.op_count += 1
 
         self.push()
 
     
-    def write_to_asm(self, components: List[str]) -> None:
+    def write_to_asm(self, id: int, components: List[str]) -> None:
         cmd = components[0]
 
-        if len(components) == 1:
-            self.perform_arithmetic(cmd)
+        if len(components) == 1: # TODO: make this if check more strict
+            self.perform_arithmetic(id, cmd)
         elif cmd == "push":
             self.get_and_push(register=components[1], index=components[2])
         elif cmd == "pop":
