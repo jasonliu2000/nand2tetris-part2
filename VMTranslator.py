@@ -427,7 +427,8 @@ def main():
             
     elif Path(main_arg).is_dir():
         directory = main_arg
-        output_filename = directory + ".asm"
+        filename = directory.rsplit("/", 1)[-1] + ".asm"
+        output_filename = directory + "/" + filename
         translator = Translate(output_filename, True)
 
         for file in Path(directory).iterdir():
