@@ -15,7 +15,7 @@ class Translate:
         "local", "argument", "this", "that", "constant", "static", "temp", "pointer"
     }
 
-    label_idx = {}
+    saved_pointers = ["@LCL", "@ARG", "@THIS", "@THAT"]
 
     R1 = "@R13"
     R2 = "@R14"
@@ -282,15 +282,15 @@ class Translate:
         self.write("M=D")
 
         # restore THAT, THIS, ARG, LCL
-        saved_pointers = ["@THAT", "@THIS", "@ARG", "@LCL"]
-        for i in range(len(saved_pointers)):
+        pc = len(self.saved_pointers)
+        for i in range(1, pc+1):
             self.write(f'{self.R1}')
             self.write("D=M")
-            self.write(f'@{i+1}')
+            self.write(f'@{i}')
             self.write("D=D-A")
             self.write("A=D")
             self.write("D=M") # D = saved address of pointer
-            self.write(saved_pointers[i])
+            self.write(self.saved_pointers[pc-i])
             self.write("M=D")
         
         # goto return address
