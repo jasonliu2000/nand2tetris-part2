@@ -22,6 +22,7 @@ class Translate:
     R3 = "@R15"
 
     op_count = 0
+    func_count = 0
 
     def __init__(self, ref):
         self.ref = ref
@@ -251,6 +252,42 @@ class Translate:
             self.op_count += 1
 
         self.push()
+
+    
+    def call_function(self, name: str, n_args: int) -> None:
+        # push returnAddress
+        return_address = f'{function_name}$ret.{self.func_count}'
+        self.write(f'@{return_address}')
+        self.write("D=A")
+        self.push()
+
+        for pointer in self.saved_pointers:
+            self.write(pointer)
+            self.write("D=M")
+            self.push()
+        
+        # ARG = SP - 5 - nArgs
+        self.write(f'@{5 - int(n_args)}')
+        self.write("D=A")
+        self.write("@SP")
+        self.write("D=M-D")
+        self.write("@ARG")
+        self.write("M=D")
+
+        # LCL = SP
+        self.write("@SP")
+        self.write("D=M")
+        self.write("@LCL")
+        self.write("M=D")
+
+        # goto function_name
+        self.write(f'@{function_name}')
+        self.write("0;JMP")
+
+        # add return address label
+        self.write(f'({return_address})')
+        
+        self.func_count += 1
     
 
     def return_function(self) -> None:
@@ -322,12 +359,15 @@ class Translate:
             self.write(f'@{components[1]}')
             self.write("0;JMP")
         elif cmd == "function":
-            name, nVars = components[1:]
+            name, n_vars = components[1:]
             self.write(f'({name})')
-            for _ in range(int(nVars)):
+            for _ in range(int(n_vars)):
                 self.write("@0")
                 self.write("D=A")
                 self.push()
+        elif cmd == "call":
+            function_name, n_args = components[1:]
+            self.call_function(function_name, int(n_args))
         else:
             print(f"Error: the command '{segment}' has not been implemented yet.")
             sys.exit(1)
