@@ -21,6 +21,8 @@ class Translate:
     R2 = "@R14"
     R3 = "@R15"
 
+    op_count = 0
+
     def __init__(self, ref):
         self.ref = ref
         self.output_file = f"{ref}.asm"
@@ -32,14 +34,14 @@ class Translate:
         with open(f'{self.output_file}', "w") as file_stream:
             self.file_stream = file_stream
 
-            for i, line in enumerate(lines):
+            for line in lines:
                 stripped_line = line.partition("//")[0].strip()
                 
                 if not stripped_line:
                     continue
 
                 parsed_components = self.parse(stripped_line)
-                self.write_to_asm(i, parsed_components)
+                self.write_to_asm(parsed_components)
     
 
     def parse(self, line: str) -> List:
@@ -65,6 +67,7 @@ class Translate:
         
         return components
     
+
     def write(self, code: str) -> None:
         print(code, file=self.file_stream)
     
@@ -194,7 +197,7 @@ class Translate:
         self.write("@SP")
         self.write("M=M+1")
     
-    def perform_arithmetic(self, id: int, cmd: str) -> None:
+    def perform_arithmetic(self, cmd: str) -> None:
         self.pop()
         self.write("D=M")
 
@@ -230,7 +233,7 @@ class Translate:
             self.write("D=D|M")
         else:
             self.write("D=M-D")
-            self.write(f"@SET_TRUE{id}")
+            self.write(f"@SET_TRUE{self.op_count}")
 
             if cmd == "eq":
                 self.write("D;JEQ")
@@ -240,27 +243,34 @@ class Translate:
                 self.write("D;JLT")
 
             self.write("D=0") # set D to false
-            self.write(f"@END{id}")
+            self.write(f"@END{self.op_count}")
             self.write("0;JMP")
 
-            self.write(f"(SET_TRUE{id})")
+            self.write(f"(SET_TRUE{self.op_count})")
             self.write("D=-1") # set D to true (-1, aka 1111111111111111)
 
-            self.write(f"(END{id})")
+            self.write(f"(END{self.op_count})")
             self.op_count += 1
 
         self.push()
 
     
-    def write_to_asm(self, id: int, components: List[str]) -> None:
+    def write_to_asm(self, components: List[str]) -> None:
         cmd = components[0]
 
         if len(components) == 1: # TODO: make this if check more strict
-            self.perform_arithmetic(id, cmd)
+            self.perform_arithmetic(cmd)
         elif cmd == "push":
             self.get_and_push(register=components[1], index=components[2])
         elif cmd == "pop":
             self.pop_and_store(register=components[1], index=components[2])
+        elif cmd == "label":
+            self.write(f'({components[1]})')
+        elif cmd == "if-goto":
+            self.pop()
+            self.write("D=M")
+            self.write(f'@{components[1]}')
+            self.write("D;JNE")
         else:
             print(f"Error: the command '{segment}' has not been implemented yet.")
             sys.exit(1)
