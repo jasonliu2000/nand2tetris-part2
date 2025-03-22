@@ -76,8 +76,6 @@ class Translate:
         # decrement stack pointer first
         self.write("@SP")
         self.write("M=M-1")
-
-        self.write("@SP")
         self.write("A=M")
         
     
@@ -253,13 +251,62 @@ class Translate:
             self.op_count += 1
 
         self.push()
+    
+
+    def return_function(self) -> None:
+        # save LCL to Register 1
+        self.write("@LCL")
+        self.write("D=M")
+        self.write(f'{self.R1}')
+        self.write("M=D")
+        
+        # store return address to Register 2
+        self.write("@5")
+        self.write("D=D-A")
+        self.write("A=D")
+        self.write("D=M")
+        self.write(f'{self.R2}')
+        self.write("M=D")
+
+        # pop and store at index ARG
+        self.pop()
+        self.write("D=M")
+        self.write("@ARG")
+        self.write("A=M")
+        self.write("M=D")
+
+        # SP = ARG + 1
+        self.write("@ARG")
+        self.write("D=M+1")
+        self.write("@SP")
+        self.write("M=D")
+
+        # restore THAT, THIS, ARG, LCL
+        saved_pointers = ["@THAT", "@THIS", "@ARG", "@LCL"]
+        for i in range(len(saved_pointers)):
+            self.write(f'{self.R1}')
+            self.write("D=M")
+            self.write(f'@{i+1}')
+            self.write("D=D-A")
+            self.write("A=D")
+            self.write("D=M") # D = saved address of pointer
+            self.write(saved_pointers[i])
+            self.write("M=D")
+        
+        # goto return address
+        self.write(f'{self.R2}')
+        self.write("D=M")
+        self.write("A=D")
+        self.write("0;JMP")
 
     
     def write_to_asm(self, components: List[str]) -> None:
         cmd = components[0]
 
-        if len(components) == 1: # TODO: make this if check more strict
+        if len(components) == 1 and cmd != "return":
             self.perform_arithmetic(cmd)
+        elif cmd == "return":
+            self.return_function()
         elif cmd == "push":
             self.get_and_push(register=components[1], index=components[2])
         elif cmd == "pop":
@@ -274,6 +321,13 @@ class Translate:
         elif cmd == "goto":
             self.write(f'@{components[1]}')
             self.write("0;JMP")
+        elif cmd == "function":
+            name, nVars = components[1:]
+            self.write(f'({name})')
+            for _ in range(int(nVars)):
+                self.write("@0")
+                self.write("D=A")
+                self.push()
         else:
             print(f"Error: the command '{segment}' has not been implemented yet.")
             sys.exit(1)
