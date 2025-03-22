@@ -271,6 +271,9 @@ class Translate:
             self.write("D=M")
             self.write(f'@{components[1]}')
             self.write("D;JNE")
+        elif cmd == "goto":
+            self.write(f'@{components[1]}')
+            self.write("0;JMP")
         else:
             print(f"Error: the command '{segment}' has not been implemented yet.")
             sys.exit(1)
