@@ -267,7 +267,7 @@ class Translate:
             self.push()
         
         # ARG = SP - 5 - nArgs
-        self.write(f'@{5 - int(n_args)}')
+        self.write(f'@{5 + int(n_args)}')
         self.write("D=A")
         self.write("@SP")
         self.write("D=M-D")
