@@ -58,7 +58,7 @@ def write(file_stream, type: str, value: str = "") -> None:
 
 
 def tokenize(filename: str) -> None:
-    cleaned_file = remove_comments(filename)
+    contents = remove_comments(filename)
 
     output_filename = filename[:-5] + "T" + ".xml"
 
@@ -75,45 +75,62 @@ def tokenize(filename: str) -> None:
         "class", "constructor", "function", "method", "field", "static", "var", "int", "char", "boolean", "void", "true", "false", "null", "this", "let", "do", "if", "else", "while", "return"
     }
 
-    with open(filename, "a") as file_stream:
+    with open(output_filename, "a") as file_stream:
         write(file_stream, "tokens")
         
-        for phrase in phrases:
-            i = 0
-            while i < len(phrase):
-                current_val = ""
+        i, n = 0, len(contents)
+        while i < n:
+            char = contents[i]
 
-                while i < len(phrase) and phrase[i].isdigit():
-                    current_val += phrase[i]
-                    i += 1
+            if char == '"':
+                i += 1
+                j = contents.find('"', i)
+                if j == -1:
+                    print("Syntax error: unterminated string literal")
+                    sys.exit(1)
+
+                write(file_stream, "stringConstant", contents[i:j])
+                i = j + 1 # add 1 to skip the trailing '"'
+                continue
+
+            if char.isdigit():
+                j = i
+                while j < n and contents[j].isdigit():
+                    j += 1
+
+                write(file_stream, "integerConstant", contents[i:j])
+                i = j
+                continue
+
+            # this is to check if a string is a class or identifier. An identifier can contain digits, 
+            # but it cannot start with a digit (hence isalpha() check in if-statement and isalnum() check in while-loop)
+            if char.isalpha() or char == "_":
+                j = i
+                while j < n and (contents[j].isalnum() or char == "_"):
+                    j += 1
                 
-                if current_val:
-                    write(file_stream, "integerConstant", current_val)
-                    current_val = ""
+                value = contents[i:j]
+                if value in keywords:
+                    write(file_stream, "keyword", value)
+                else:
+                    write(file_stream, "identifier", value)
                 
-                if i < len(phrase) and phrase[i] == '"':
-                    i += 1
-                    while i < len(phrase) and phrase[i] != '"':
-                        current_val += phrase[i]
-                        i += 1
-
-                    write(file_stream, "stringConstant", current_val)
-                    current_val = ""
-
-
-                while i < len(phrase) and phrase[i] not in symbols:
-                    current_val += phrase[i]
-                    i += 1
-
-                if current_val in keywords:
-                    write(file_stream, "keyword", current_val)
-                elif current_val:
-                    write(file_stream, "identifier", current_val)
-                    current_val = ""
+                i = j
+                continue
                 
-                if i < len(phrase) and phrase[i] in symbols:
-                    write(file_stream, "symbol", phrase[i])
-                    i += 1
+            if char in symbols:
+                encoded = char
+
+                if char == "&":
+                    encoded = "&amp;"
+                elif char == "<":
+                    encoded = "&lt;"
+                elif char == ">":
+                    encoded = "&gt;"
+                
+                write(file_stream, "symbol", encoded)
+            
+            i += 1
 
         write(file_stream, "/tokens")
 
