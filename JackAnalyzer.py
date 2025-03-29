@@ -4,81 +4,50 @@ import re
 from typing import List
 from pathlib import Path
 
-def phrasify(code: str) -> List[str]:
-    initial_phrases = code.split()
-    result = []
-    
-    for phrase in initial_phrases:
-        if "//" in phrase:
-            end_idx = phrase.find("//")
-            fragment = phrase[:end_idx].strip()
-            
-            if len(fragment) > 0:
-                phrases.append(fragment)
+def remove_inline_comments(line: str) -> str:
+    n = len(line)
+    for i in range(n):
+        if i+1 < n and line[i:i+2] == "//":
+            return line[:i].strip()
 
-            break
-
-        result.append(phrase)
-
-    return result
+    return line
 
 
-def strip_doc_comments(phrases: List[str]) -> List[str]:
-    phrase_idx, total_phrases = 0, len(phrases)
+def remove_doc_comments(code: str) -> str:
+    i, n = 0, len(code)
     is_comment = False
-    result = []
+    result = ""
 
-    while phrase_idx < total_phrases:
-        while phrase_idx < total_phrases and is_comment:
-            phrase = phrases[phrase_idx]
-            if "*/" in phrase:
-                end_idx = phrase.find("*/") + len("*/")
-                valid_phrase = phrase[end_idx:]
-
-                if valid_phrase:
-                    result.append(valid_phrase)
-
-                is_comment = False
-            
-            phrase_idx += 1
-
-        if phrase_idx == total_phrases:
-            break
-
-        phrase = phrases[phrase_idx]
-
-        if "/**" in phrase:
-            start_idx = phrase.find("/**")
-            valid_phrase = phrase[:start_idx]
-
-            if valid_phrase:
-                result.append(valid_phrase)
-
+    while i < n:
+        if not is_comment and i+2 < n and code[i:i+3] == "/**":
             is_comment = True
-        else:
-            result.append(phrase)
+        elif i+1 < n and code[i:i+2] == "*/":
+            is_comment = False
+            i += 1
+        elif not is_comment:
+            result += code[i]
 
-        phrase_idx += 1
-    
+        i += 1
+
     return result
 
 
-def clean_and_phrasify(input_filename: str) -> List[str]:
-    with open(input_filename, "r") as file:
+def remove_comments(filename: str) -> str:
+    with open(filename, "r") as file:
         lines = file.read().splitlines()
-        phrases = []
+        cleaned_code = ""
 
         for line in lines:
             stripped_line = line.strip()
             if not stripped_line or stripped_line.startswith("//"):
                 continue
 
-            phrases += phrasify(stripped_line)
+            cleaned_code += remove_inline_comments(stripped_line)
         
-        # print(phrases)
-        cleaned_phrases = strip_doc_comments(phrases)
-        # print(cleaned_phrases)
-        return cleaned_phrases
+        # print(cleaned_code)
+        cleaned_code = remove_doc_comments(cleaned_code)
+        # print(cleaned_code)
+        return cleaned_code
 
 
 def write(file_stream, type: str, value: str = "") -> None:
@@ -88,9 +57,13 @@ def write(file_stream, type: str, value: str = "") -> None:
         print(f"<{type}>", file=file_stream)
 
 
-def tokenize(filename: str, phrases: List[str]) -> None:
+def tokenize(filename: str) -> None:
+    cleaned_file = remove_comments(filename)
+
+    output_filename = filename[:-5] + "T" + ".xml"
+
     # delete output file if it already exists
-    file = Path(filename)
+    file = Path(output_filename)
     if file.is_file():
         file.unlink()
 
@@ -158,20 +131,14 @@ def main():
             print(f"Error: File '{input_filename}' not found.")
             sys.exit(1)
 
-        phrases = clean_and_phrasify(input_filename)
-
-        output_filename = input_filename[:-5] + "T" + ".xml"
-        tokenize(output_filename, phrases)
+        tokenize(input_filename)
             
     elif Path(main_arg).is_dir():
         directory = main_arg
         for file in Path(directory).iterdir():
             if file.name.endswith(".jack"):
                 input_filename = f'{directory}/{file.name}'
-                phrases = clean_and_phrasify(input_filename)
-
-                output_filename = input_filename[:-5] + "T" + ".xml"
-                tokenize(output_filename, phrases)
+                tokenize(input_filename)
                 
     else:
         print(f"Error: Input must be a either a filename with .jack extension or a directory")
