@@ -63,7 +63,7 @@ def write(file_stream, type: str, value: str = "") -> None:
         print(f"<{type}>", file=file_stream)
 
 
-def tokenize(filename: str) -> None:
+def tokenize(filename: str) -> str:
     output_filename = filename[:-5] + "T" + ".xml"
 
     # delete output file if it already exists
@@ -131,3 +131,5 @@ def tokenize(filename: str) -> None:
             i += 1
 
         write(file_stream, "/tokens")
+
+    return output_filename

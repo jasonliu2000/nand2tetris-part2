@@ -1,5 +1,7 @@
 import sys
 from pathlib import Path
+
+from CompilationEngine import compileStatements
 from JackTokenizer import tokenize
 
 def main():
@@ -15,14 +17,16 @@ def main():
             print(f"Error: File '{input_filename}' not found.")
             sys.exit(1)
 
-        tokenize(input_filename)
+        tokenized_file = tokenize(input_filename)
+        compileStatements(tokenized_file)
             
     elif Path(main_arg).is_dir():
         directory = main_arg
         for file in Path(directory).iterdir():
             if file.name.endswith(".jack"):
                 input_filename = f'{directory}/{file.name}'
-                tokenize(input_filename)
+                tokenized_file = tokenize(input_filename)
+                compileStatements(tokenized_file)
                 
     else:
         print(f"Error: Input must be a either a filename with .jack extension or a directory")
