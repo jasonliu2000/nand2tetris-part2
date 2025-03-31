@@ -8,6 +8,9 @@ class CompilationEngine:
     root = None
     node_stack = []
 
+    op_symbols = { "+", "-", "*", "/", "&", "|", "<", ">", "=" }
+    unary_op = { "-", "~" }
+
     def __init__(self, filename: str):
         tokens_tree = ET.parse(filename)
         self.output_filename = filename[:-5] + ".xml"
@@ -63,7 +66,6 @@ class CompilationEngine:
 
             elif property_type in ["constructor", "function", "method"]:
                 self.compile_subroutine(token)
-                print("!!! - ", self.node_stack)
             
             
     def compile_var(self, token: (str, str), class_var=False) -> None:
@@ -116,7 +118,6 @@ class CompilationEngine:
 
             self.compile_statements()
         
-        print("before popping parent in subroutine:", self.node_stack)
         self.pop_parent_node()
 
 
@@ -127,7 +128,6 @@ class CompilationEngine:
             _, property_type = token = self.get_token()
 
             if token == ("symbol", "}"):
-                print("before popping statements node:", self.node_stack)
                 self.pop_parent_node()
 
             if property_type == "let":
@@ -264,21 +264,6 @@ class CompilationEngine:
         self.pop_parent_node()
     
 
-    def compile_expression(self, token: (str, str), end_on: [(str, str)]) -> None:
-        self.add_parent_node("expression")
-        while token not in end_on:
-            tag, value = token
-            if tag == "symbol":
-                self.write_to_xml(token)
-                self.token_idx += 1
-            else:
-                self.compile_term(token)
-            
-            token = self.get_token()
-
-        self.pop_parent_node()
-    
-
     def compile_expression_list(self, token: (str, str)) -> None:
         self.add_parent_node("expressionList")
         end_tokens = [("symbol", ","), ("symbol", ")")]
@@ -294,17 +279,28 @@ class CompilationEngine:
 
         self.pop_parent_node()
 
+
+    def compile_expression(self, token: (str, str), end_on: [(str, str)]) -> None:
+        self.add_parent_node("expression")
+        self.compile_term(token)
+
+        tag, value = token = self.get_token()
+        if tag == "symbol" and value in self.op_symbols:
+            self.write_to_xml(token)
+            self.token_idx += 1
+            self.compile_term(self.get_token())
+
+        self.pop_parent_node()
+
     
     def compile_term(self, token: (str, str)) -> None:
         self.add_parent_node("term")
-
-        tag, _ = token
+        tag, value = token
         self.write_to_xml(token)
         self.token_idx += 1
 
         if tag == "identifier":
             token = self.get_token()
-            print(token)
 
             if token == ("symbol", "("):
                 self.compile_expression(token, [("symbol", ")")])
@@ -331,6 +327,17 @@ class CompilationEngine:
                 assert token == ("symbol", ")")
                 self.write_to_xml(token)
                 self.token_idx += 1
+        
+        elif token == ("symbol", "("):
+            self.compile_expression(self.get_token(), [("symbol", ")")])
+
+            token = self.get_token()
+            assert token == ("symbol", ")")
+            self.write_to_xml(token)
+            self.token_idx += 1
+
+        elif tag == "symbol" and value in self.unary_op:
+            self.compile_term(self.get_token())
 
         self.pop_parent_node()
 
