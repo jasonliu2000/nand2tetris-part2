@@ -8,8 +8,6 @@ class CompilationEngine:
     root = None
     node_stack = []
 
-    op_symbols = { "+", "-", "*", "/", "&", "|", "<", ">", "=" }
-
     def __init__(self, filename: str):
         tokens_tree = ET.parse(filename)
         self.output_filename = filename[:-5] + ".xml"
