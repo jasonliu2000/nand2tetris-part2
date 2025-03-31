@@ -141,7 +141,8 @@ class CompilationEngine:
             elif property_type == "while":
                 self.compile_while(token)
             else:
-                print("Statement not implemented yet:", property_type)
+                if property_type != "}":
+                    print("Statement not implemented yet:", property_type)
                 break
 
     
@@ -358,8 +359,6 @@ class CompilationEngine:
                 continue
 
             self.token_idx += 1
-
-        print(self.node_stack)
 
         tree = ET.ElementTree(root)
         tree.write(self.output_filename)
