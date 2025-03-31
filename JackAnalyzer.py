@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-from CompilationEngine import compileStatements
+from CompilationEngine import CompilationEngine
 from JackTokenizer import tokenize
 
 def main():
@@ -18,7 +18,7 @@ def main():
             sys.exit(1)
 
         tokenized_file = tokenize(input_filename)
-        compileStatements(tokenized_file)
+        CompilationEngine(tokenized_file).compile()
             
     elif Path(main_arg).is_dir():
         directory = main_arg
@@ -26,7 +26,7 @@ def main():
             if file.name.endswith(".jack"):
                 input_filename = f'{directory}/{file.name}'
                 tokenized_file = tokenize(input_filename)
-                compileStatements(tokenized_file)
+                CompilationEngine(tokenized_file).compile()
                 
     else:
         print(f"Error: Input must be a either a filename with .jack extension or a directory")
