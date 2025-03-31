@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 from xml.dom.minidom import parseString
 import xml.etree.ElementTree as ET
 
@@ -34,7 +34,7 @@ class CompilationEngine:
         ET.SubElement(self.node_stack[-1], tag).text = f' {value} ' if tag != "stringConstant" else value
     
 
-    def get_parent_node(self) -> ET.Element|None:
+    def get_parent_node(self) -> Union[ET.Element, None]:
         return self.node_stack[-1].tag if self.node_stack else None
 
 
