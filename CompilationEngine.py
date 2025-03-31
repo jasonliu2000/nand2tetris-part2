@@ -18,12 +18,17 @@ class CompilationEngine:
     def get_token(self, idx=None) -> (str, str):
         if not idx:
             idx = self.token_idx
-        return self.tokens_root[idx].tag, self.tokens_root[idx].text.strip()
+
+        tag, value = self.tokens_root[idx].tag, self.tokens_root[idx].text
+        if tag != "stringConstant":
+            value = value.strip()
+        
+        return (tag, value)
 
 
     def write_to_xml(self, token: (str, str)) -> None:
         tag, value = token
-        ET.SubElement(self.node_stack[-1], tag).text = f' {value} '
+        ET.SubElement(self.node_stack[-1], tag).text = f' {value} ' if tag != "stringConstant" else value
     
 
     def get_parent_node(self) -> ET.Element|None:
