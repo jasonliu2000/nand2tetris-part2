@@ -135,10 +135,38 @@ class CompilationEngine:
                 self.compile_return(token)
             elif property_type == "if":
                 self.compile_if(token)
-
-            # TODO: remove once finished with compile funcs
-            if property_type not in ["let", "do", "return", "if"]:
+            elif property_type == "while":
+                self.compile_while(token)
+            else:
+                print("Statement not implemented yet:", property_type)
                 break
+
+    
+    def compile_while(self, token: (str, str)) -> None:
+        self.add_parent_node("whileStatement")
+        while token != ("symbol", "("):
+            token = self.get_token()
+            self.write_to_xml(token)
+            self.token_idx += 1
+        
+        self.compile_expression(self.get_token(), [("symbol", ")")])
+        token = self.get_token()
+        assert token[1] == ")"
+        self.write_to_xml(token)
+        self.token_idx += 1
+
+        token = self.get_token()
+        assert token[1] == "{"
+        self.write_to_xml(token)
+        self.token_idx += 1
+
+        self.compile_statements()
+        token = self.get_token()
+        assert token[1] == "}"
+        self.write_to_xml(token)
+        self.token_idx += 1
+
+        self.pop_parent_node()
 
 
     def compile_if(self, token: (str, str)) -> None:
