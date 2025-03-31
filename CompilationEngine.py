@@ -149,7 +149,7 @@ class CompilationEngine:
             self.write_to_xml(token)
             self.token_idx += 1
 
-        self.compile_expression(self.get_token(), ("symbol", ")"))
+        self.compile_expression(self.get_token(), [("symbol", ")")])
         token = self.get_token()
         assert token[1] == ")"
         self.write_to_xml(token)
@@ -191,7 +191,7 @@ class CompilationEngine:
         
         token = self.get_token()
         if token != ("symbol", ";"):
-            self.compile_expression(token, ("symbol", ";"))
+            self.compile_expression(token, [("symbol", ";")])
         
         token = self.get_token()
         assert token[1] == ";"
@@ -209,12 +209,16 @@ class CompilationEngine:
             self.token_idx += 1
 
             if token == ("symbol", "("):
-                # TODO: consider moving expressionList compilation to its own func
-                self.add_parent_node("expressionList")
+                self.compile_expression_list(self.get_token())
+                # self.add_parent_node("expressionList")
+                # token = self.get_token()
+                # if token != ("symbol", ")"):
+                #     self.compile_expression(token, [("symbol", ")")])
+                # self.pop_parent_node()
                 token = self.get_token()
-                if token != ("symbol", ")"):
-                    self.compile_expression(token, ("symbol", ")"))
-                self.pop_parent_node()
+                assert token == ("symbol", ")")
+                self.write_to_xml(token)
+                self.token_idx += 1
 
         self.pop_parent_node()
     
@@ -227,29 +231,45 @@ class CompilationEngine:
             self.token_idx += 1
 
             if token == ("symbol", "["):
-                self.compile_expression(self.get_token(), ("symbol", "]"))
+                self.compile_expression(self.get_token(), [("symbol", "]")])
             elif token == ("symbol", "="):
-                self.compile_expression(self.get_token(), ("symbol", ";"))
+                self.compile_expression(self.get_token(), [("symbol", ";")])
 
         self.pop_parent_node()
     
 
-    def compile_expression(self, token: (str, str), end_on: (str, str)) -> None:
+    def compile_expression(self, token: (str, str), end_on: [(str, str)]) -> None:
         self.add_parent_node("expression")
-        while token != end_on:
+        while token not in end_on:
             tag, value = token
-            if tag == "symbol" and value in self.op_symbols:
+            if tag == "symbol": # and value in self.op_symbols:
                 self.write_to_xml(token)
                 self.token_idx += 1
             else:
-                self.compile_term(token, end_on)
+                self.compile_term(token)
             
+            token = self.get_token()
+
+        self.pop_parent_node()
+    
+
+    def compile_expression_list(self, token: (str, str)) -> None:
+        self.add_parent_node("expressionList")
+        end_tokens = [("symbol", ","), ("symbol", ")")]
+
+        while token != ("symbol", ")"):
+            if token == ("symbol", ","):
+                self.write_to_xml(token)
+                self.token_idx += 1
+            else:
+                self.compile_expression(token, end_tokens)
+
             token = self.get_token()
 
         self.pop_parent_node()
 
     
-    def compile_term(self, token: (str, str), end_on: (str, str)) -> None:
+    def compile_term(self, token: (str, str)) -> None:
         self.add_parent_node("term")
 
         tag, _ = token
@@ -261,11 +281,11 @@ class CompilationEngine:
             print(token)
 
             if token == ("symbol", "("):
-                self.compile_expression(token, ("symbol", ")"))
+                self.compile_expression(token, [("symbol", ")")])
                 token = self.get_token()
                 assert token == ("symbol", ")")
             elif token == ("symbol", "["):
-                self.compile_expression(token, ("symbol", "]"))
+                self.compile_expression(token, [("symbol", "]")])
                 token = self.get_token()
                 assert token == ("symbol", "]")
             elif token == ("symbol", "."):
@@ -274,15 +294,11 @@ class CompilationEngine:
                     self.write_to_xml(token)
                     self.token_idx += 1
                     
-                # TODO: consider moving expressionList compilation to its own func
-                self.add_parent_node("expressionList")
+                self.compile_expression_list(self.get_token())
                 token = self.get_token()
-                if token != ("symbol", ")"):
-                    self.compile_expression(token, ("symbol", ")"))
-                    token = self.get_token()
-                    assert token == ("symbol", ")")
-
-                self.pop_parent_node()
+                assert token == ("symbol", ")")
+                self.write_to_xml(token)
+                self.token_idx += 1
 
         self.pop_parent_node()
 
