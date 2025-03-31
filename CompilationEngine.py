@@ -238,11 +238,6 @@ class CompilationEngine:
 
             if token == ("symbol", "("):
                 self.compile_expression_list(self.get_token())
-                # self.add_parent_node("expressionList")
-                # token = self.get_token()
-                # if token != ("symbol", ")"):
-                #     self.compile_expression(token, [("symbol", ")")])
-                # self.pop_parent_node()
                 token = self.get_token()
                 assert token == ("symbol", ")")
                 self.write_to_xml(token)
@@ -270,7 +265,7 @@ class CompilationEngine:
         self.add_parent_node("expression")
         while token not in end_on:
             tag, value = token
-            if tag == "symbol": # and value in self.op_symbols:
+            if tag == "symbol":
                 self.write_to_xml(token)
                 self.token_idx += 1
             else:
@@ -313,9 +308,15 @@ class CompilationEngine:
                 token = self.get_token()
                 assert token == ("symbol", ")")
             elif token == ("symbol", "["):
-                self.compile_expression(token, [("symbol", "]")])
+                self.write_to_xml(token)
+                self.token_idx += 1
+
+                self.compile_expression(self.get_token(), [("symbol", "]")])
+                
                 token = self.get_token()
                 assert token == ("symbol", "]")
+                self.write_to_xml(token)
+                self.token_idx += 1
             elif token == ("symbol", "."):
                 while token != ("symbol", "("):
                     token = self.get_token()
