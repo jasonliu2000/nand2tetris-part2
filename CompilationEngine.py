@@ -49,12 +49,17 @@ class CompilationEngine:
         self.node_stack.pop()
 
 
-    def compile_class(self) -> None:
+    def compile_class(self, token: (str, str)) -> None:
+        self.write_to_xml(token)
+        self.token_idx += 1
+
+        _, self.class_name = token = self.get_token()
+        self.write_to_xml(token)
+        self.token_idx += 1
+
         token = self.get_token()
-        while token != ("symbol", "{"):
-            token = self.get_token()
-            self.write_to_xml(token)
-            self.token_idx += 1
+        self.write_to_xml(token)
+        self.token_idx += 1
         
         while self.get_parent_node() == "class":
             _, property_type = token = self.get_token()
@@ -68,7 +73,7 @@ class CompilationEngine:
                 self.compile_var(token)
 
             elif property_type in ["constructor", "function", "method"]:
-                self.compile_subroutine(token)
+                self.compile_subroutine(token, property_type)
             
             
     def compile_var(self, token: (str, str)) -> None:
@@ -98,7 +103,7 @@ class CompilationEngine:
             token = self.get_token()
 
 
-    def compile_subroutine(self, token: (str, str)) -> None:
+    def compile_subroutine(self, token: (str, str), subroutine_type: str) -> None:
         self.symbol_table.clear_subroutine_symbols()
 
         self.add_parent_node("subroutineDec")
@@ -109,6 +114,9 @@ class CompilationEngine:
         
         self.add_parent_node("parameterList")
         token = self.get_token()
+
+        if subroutine_type == "method":
+            self.symbol_table.add_symbol(("this", self.class_name, "argument"))
 
         if token != ("symbol", ")"):
             self.compile_parameters(token)
@@ -373,11 +381,11 @@ class CompilationEngine:
         self.node_stack.append(root)
 
         while self.token_idx < self.tokens_count:
-            tag, value = self.get_token()
+            _, value = token = self.get_token()
             
             # class
             if value == "class":
-                self.compile_class()
+                self.compile_class(token)
                 continue
 
             self.token_idx += 1
