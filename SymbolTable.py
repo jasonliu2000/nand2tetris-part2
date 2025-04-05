@@ -11,6 +11,7 @@ class SymbolTable:
     
     def clear_subroutine_symbols(self) -> None:
         self.subroutine_symbols = { kind: [] for kind in self.subroutine_var_kinds }
+        self.tables = [self.subroutine_symbols, self.class_symbols]
     
     
     def add_symbol(self, symbol_details) -> None:
