@@ -265,19 +265,31 @@ class CompilationEngine:
 
     def compile_do(self, token: (str, str)) -> None:
         self.add_parent_node("doStatement")
+
+        self.write_to_xml(token)
+        self.token_idx += 1
+
+        _, func_name = token = self.get_token()
+        self.write_to_xml(token)
+        self.token_idx += 1
+
+        n_args = 0
+
         while token != ("symbol", ";"):
             token = self.get_token()
             self.write_to_xml(token)
             self.token_idx += 1
 
             if token == ("symbol", "("):
-                self.compile_expression_list(self.get_token())
+                n_args = self.compile_expression_list(self.get_token())
                 token = self.get_token()
                 assert token == ("symbol", ")")
                 self.write_to_xml(token)
                 self.token_idx += 1
 
         self.pop_parent_node()
+
+        VMWriter.call(func_name, n_args)
     
 
     def compile_let(self, token: (str, str)) -> None:
@@ -309,9 +321,10 @@ class CompilationEngine:
         VMWriter.pop_to(variable)
     
 
-    def compile_expression_list(self, token: (str, str)) -> None:
+    def compile_expression_list(self, token: (str, str)) -> int:
         self.add_parent_node("expressionList")
         end_tokens = [("symbol", ","), ("symbol", ")")]
+        n_args = 0
 
         while token != ("symbol", ")"):
             if token == ("symbol", ","):
@@ -319,10 +332,12 @@ class CompilationEngine:
                 self.token_idx += 1
             else:
                 self.compile_expression(token, end_tokens)
+                n_args += 1
 
             token = self.get_token()
 
         self.pop_parent_node()
+        return n_args
 
 
     def compile_expression(self, token: (str, str), end_on: [(str, str)]) -> None:

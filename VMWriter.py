@@ -41,3 +41,7 @@ class VMWriter:
             print(f'!!! Symbol {symbol} has no mapping VM operation !!!')
         else:
             print(VMWriter.operations[symbol])
+
+    
+    def call(func_name, n_args) -> None:
+        print(f'call {func_name} {n_args}')
