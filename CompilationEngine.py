@@ -2,6 +2,8 @@ from typing import List, Union
 from xml.dom.minidom import parseString
 import xml.etree.ElementTree as ET
 
+from SymbolTable import SymbolTable
+
 class CompilationEngine:
 
     token_idx = 0
@@ -16,6 +18,7 @@ class CompilationEngine:
         self.output_filename = filename[:-5] + ".xml"
         self.tokens_root = tokens_tree.getroot()
         self.tokens_count = len(self.tokens_root)
+        self.symbol_table = SymbolTable()
 
 
     def get_token(self, idx=None) -> (str, str):
@@ -62,23 +65,42 @@ class CompilationEngine:
                 self.pop_parent_node()
 
             if property_type in ["static", "field"]:
-                self.compile_var(token, True)
+                self.compile_var(token)
 
             elif property_type in ["constructor", "function", "method"]:
                 self.compile_subroutine(token)
             
             
-    def compile_var(self, token: (str, str), class_var=False) -> None:
-        self.add_parent_node("classVarDec" if class_var else "varDec")
+    def compile_var(self, token: (str, str)) -> None:
+        _, var_kind = self.get_token()
+        self.token_idx += 1
+
+        _, var_type = self.get_token()
+        self.token_idx += 1
+
         while token != ("symbol", ";"):
-            token = self.get_token()
-            self.write_to_xml(token)
+            _, var_name = token = self.get_token()
+            if var_name not in [",", ";"]:
+                self.symbol_table.add_symbol((var_name, var_type, var_kind))
+
             self.token_idx += 1
-        
-        self.pop_parent_node()
+
+
+    def compile_parameters(self, token: (str, str)) -> None:
+        while token != ("symbol", ")"):
+            _, var_type = token
+            if var_type != ",":
+                self.token_idx += 1
+                _, var_name = self.get_token()
+                self.symbol_table.add_symbol((var_name, var_type, "argument"))
+
+            self.token_idx += 1
+            token = self.get_token()
 
 
     def compile_subroutine(self, token: (str, str)) -> None:
+        self.symbol_table.clear_subroutine_symbols()
+
         self.add_parent_node("subroutineDec")
         while token != ("symbol", "("):
             token = self.get_token()
@@ -88,11 +110,10 @@ class CompilationEngine:
         self.add_parent_node("parameterList")
         token = self.get_token()
 
-        while token != ("symbol", ")"):
-            self.write_to_xml(token)
-            self.token_idx += 1
-            token = self.get_token()
-        
+        if token != ("symbol", ")"):
+            self.compile_parameters(token)
+
+        token = self.get_token()        
         self.pop_parent_node()
         self.write_to_xml(token)
         self.token_idx += 1
@@ -118,6 +139,7 @@ class CompilationEngine:
 
             self.compile_statements()
         
+        print(self.symbol_table.subroutine_symbols)
         self.pop_parent_node()
 
 
@@ -363,6 +385,10 @@ class CompilationEngine:
         tree = ET.ElementTree(root)
         tree.write(self.output_filename)
         self.prettify_xml(self.output_filename)
+
+        # TODO: remove
+        for table in self.symbol_table.tables:
+            print(table)
 
 
     def prettify_xml(self, file_path):
