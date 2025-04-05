@@ -3,6 +3,7 @@ from xml.dom.minidom import parseString
 import xml.etree.ElementTree as ET
 
 from SymbolTable import SymbolTable
+from VMWriter import VMWriter
 
 class CompilationEngine:
 
@@ -104,8 +105,6 @@ class CompilationEngine:
 
 
     def compile_subroutine(self, token: (str, str), subroutine_type: str) -> None:
-        self.symbol_table.clear_subroutine_symbols()
-
         self.add_parent_node("subroutineDec")
         while token != ("symbol", "("):
             token = self.get_token()
@@ -147,8 +146,9 @@ class CompilationEngine:
 
             self.compile_statements()
         
-        print(self.symbol_table.subroutine_symbols)
+        # print(self.symbol_table.subroutine_symbols)
         self.pop_parent_node()
+        self.symbol_table.clear_subroutine_symbols()
 
 
     def compile_statements(self) -> None:
@@ -282,6 +282,17 @@ class CompilationEngine:
 
     def compile_let(self, token: (str, str)) -> None:
         self.add_parent_node("letStatement")
+        
+        self.write_to_xml(token)
+        self.token_idx += 1
+
+        kind, var_name = token = self.get_token()
+        assert kind == "identifier"
+        self.write_to_xml(token)
+        self.token_idx += 1
+
+        token = self.get_token()
+
         while token != ("symbol", ";"):
             token = self.get_token()
             self.write_to_xml(token)
@@ -293,6 +304,9 @@ class CompilationEngine:
                 self.compile_expression(self.get_token(), [("symbol", ";")])
 
         self.pop_parent_node()
+
+        variable = self.symbol_table.find_symbol(var_name)
+        VMWriter.pop_to(variable)
     
 
     def compile_expression_list(self, token: (str, str)) -> None:
@@ -320,6 +334,12 @@ class CompilationEngine:
             self.write_to_xml(token)
             self.token_idx += 1
             self.compile_term(self.get_token())
+            if value == "*":
+                print("!!! MULT SYMBOL: NEED TO CALL Math.mult() or smth like that !!!")
+            elif value == "/":
+                print("!!! DIV SYMBOL: NEED TO CALL Math.div() or smth like that !!!")
+            else:
+                VMWriter.perform_operation(value)
 
         self.pop_parent_node()
 
@@ -328,6 +348,13 @@ class CompilationEngine:
         self.add_parent_node("term")
         tag, value = token
         self.write_to_xml(token)
+
+        if tag == "integerConstant":
+            VMWriter.push(tag, value)
+        elif tag == "identifier":
+            result = self.symbol_table.find_symbol(value)
+            VMWriter.push_variable(result)
+
         self.token_idx += 1
 
         if tag == "identifier":

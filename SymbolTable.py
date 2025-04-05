@@ -22,3 +22,13 @@ class SymbolTable:
         kind_count = len(symbol_table[var_kind])
 
         symbol_table[var_kind].append((var_name, var_type, var_kind, kind_count))
+    
+
+    def find_symbol(self, name) -> tuple:
+        for table in self.tables:
+            for symbols in table.values():
+                for symbol in symbols:
+                    if symbol[0] == name:
+                        return symbol
+
+        return ()
