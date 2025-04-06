@@ -12,7 +12,6 @@ class VMWriter:
         "=": "eq",
         "neg": "neg"
     }
-        # "not"
 
     def __init__(self, output_filename: str):
         file = Path(output_filename)
