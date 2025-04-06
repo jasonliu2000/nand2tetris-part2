@@ -6,7 +6,8 @@ class VMWriter:
         "+": "add", 
         "-": "sub", 
         "&": "and", 
-        "|": "or", 
+        "|": "or",
+        "~": "not",
         "<": "lt", 
         ">": "gt", 
         "=": "eq",
@@ -80,8 +81,8 @@ class VMWriter:
             self.write(VMWriter.operations[symbol])
 
     
-    def declare_func(self, func_name, n_params) -> None:
-        self.write(f'function {func_name} {n_params}')
+    def declare_func(self, func_name, local_vars) -> None:
+        self.write(f'function {func_name} {local_vars}')
     
     
     def call(self, func_name, n_args) -> None:

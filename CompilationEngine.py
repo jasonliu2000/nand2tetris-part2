@@ -96,21 +96,16 @@ class CompilationEngine:
             self.token_idx += 1
 
 
-    def compile_parameters(self, token: (str, str)) -> int:
-        n_params = 0
+    def compile_parameters(self, token: (str, str)) -> None:
         while token != ("symbol", ")"):
             _, var_type = token
             if var_type != ",":
                 self.token_idx += 1
                 _, var_name = self.get_token()
-
                 self.symbol_table.add_symbol((var_name, var_type, "argument"))
-                n_params += 1
 
             self.token_idx += 1
             token = self.get_token()
-        
-        return n_params
 
 
     def compile_subroutine(self, token: (str, str), subroutine_type: str) -> None:
@@ -139,18 +134,16 @@ class CompilationEngine:
             self.symbol_table.add_symbol(("this", self.class_name, "argument"))
             self.writer.push_variable(("", "", "argument", 0))
             self.writer.pop_to(("", "", "pointer", 0))
-        
-        n_params = 0
 
         if token != ("symbol", ")"):
-            n_params = self.compile_parameters(token)
+            self.compile_parameters(token)
 
         token = self.get_token()        
         self.pop_parent_node()
         self.write_to_xml(token)
         self.token_idx += 1
 
-        self.writer.declare_func(func_name, n_params)
+        func_declared = False
 
         self.add_parent_node("subroutineBody")
         assert self.get_token() == ("symbol", "{")
@@ -170,6 +163,10 @@ class CompilationEngine:
             while property_type == "var":
                 self.compile_var(token)
                 _, property_type = token = self.get_token()
+
+            if not func_declared:
+                self.writer.declare_func(f'{self.class_name}.{func_name}', self.symbol_table.get_local_vars_count())
+                func_declared = True
 
             self.compile_statements()
         

@@ -33,3 +33,7 @@ class SymbolTable:
                         return symbol
 
         return ()
+
+
+    def get_local_vars_count(self) -> int:
+        return len(self.subroutine_symbols["local"])
