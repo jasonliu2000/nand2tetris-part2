@@ -428,6 +428,8 @@ class CompilationEngine:
 
         if tag == "integerConstant":
             VMWriter.push(tag, value)
+        elif tag == "stringConstant":
+            VMWriter.push_string(value)
         elif tag == "keyword" and value in self.keyword_constants:
             VMWriter.push_keyword_constant(value)
             self.token_idx += 1

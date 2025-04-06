@@ -27,16 +27,23 @@ class VMWriter:
 
 
     def push_keyword_constant(keyword) -> None:
+        if keyword == "this":
+            print("push pointer 0")
+            return
+        
+        print("push constant 0")
+        
         if keyword == "true":
-            print("push constant 0")
-            print("push constant 0")
-            print("eq")
-        elif keyword == "false":
-            print("push constant 0")
-            print("push constant 1")
-            print("eq")
-        else:
-            print(f'!!! Need to implement VM command for keyword {keyword} !!!')
+            print("not")
+
+
+    def push_string(value) -> None:
+        print(f'push constant {len(value)}')
+        VMWriter.call("String.new", 1)
+
+        for letter in value:
+            print(f'push constant {ord(letter)}')
+            VMWriter.call("String.appendChar", 2)
 
 
     def pop_to(symbol_tuple) -> None:
