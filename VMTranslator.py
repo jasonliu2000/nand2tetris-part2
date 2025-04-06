@@ -316,6 +316,7 @@ class Translate:
         self.write("D=M")
         self.write("@LCL")
         self.write("M=D")
+        # SP is now set at the stack location for what will be the function's first local var
 
         # goto function
         self.write(f'@{name}')
