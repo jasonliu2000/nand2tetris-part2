@@ -26,6 +26,19 @@ class VMWriter:
             print(f'push {var_kind} {index}', f'| {var_kind} {VAR_NAME}')
 
 
+    def push_keyword_constant(keyword) -> None:
+        if keyword == "true":
+            print("push constant 0")
+            print("push constant 0")
+            print("eq")
+        elif keyword == "false":
+            print("push constant 0")
+            print("push constant 1")
+            print("eq")
+        else:
+            print(f'!!! Need to implement VM command for keyword {keyword} !!!')
+
+
     def pop_to(symbol_tuple) -> None:
         assert len(symbol_tuple) == 4
 

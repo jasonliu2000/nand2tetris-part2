@@ -14,6 +14,8 @@ class CompilationEngine:
     op_symbols = { "+", "-", "*", "/", "&", "|", "<", ">", "=" }
     unary_op = { "-", "~" }
 
+    keyword_constants = ["true", "false", "null", "this"]
+
     def __init__(self, filename: str):
         tokens_tree = ET.parse(filename)
         self.output_filename = filename[:-5] + ".xml"
@@ -244,11 +246,17 @@ class CompilationEngine:
         self.write_to_xml(token)
         self.token_idx += 1
 
+        # TODO: move this code into VMWriter
+        print("not")
+        print("if-goto L1")
+
         self.compile_statements()
         token = self.get_token()
         assert token[1] == "}"
         self.write_to_xml(token)
         self.token_idx += 1
+
+        print("label L1")
 
         token = self.get_token()
         if token == ("keyword", "else"):
@@ -262,6 +270,8 @@ class CompilationEngine:
             assert token[1] == "}"
             self.write_to_xml(token)
             self.token_idx += 1
+
+        print("label L2")
 
         self.pop_parent_node()
 
@@ -418,9 +428,11 @@ class CompilationEngine:
 
         if tag == "integerConstant":
             VMWriter.push(tag, value)
+        elif tag == "keyword" and value in self.keyword_constants:
+            VMWriter.push_keyword_constant(value)
+            self.token_idx += 1
         elif tag == "identifier" and next_token == ("symbol", "."):
             self.compile_subroutine_call(token)
-
         elif tag == "identifier" and next_token == ("symbol", "("):
             self.token_idx += 1
             self.write_to_xml(self.get_token())
