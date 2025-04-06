@@ -313,6 +313,7 @@ class CompilationEngine:
 
         self.compile_subroutine_call(token)
 
+        self.token_idx += 1
         token = self.get_token()
         assert token == ("symbol", ";")
         self.write_to_xml(token)
@@ -362,6 +363,7 @@ class CompilationEngine:
                 self.writer.perform_operation("+")
             elif token == ("symbol", "="):
                 self.compile_expression(self.get_token(), [("symbol", ";")])
+                assert self.get_token() == ("symbol", ";")
 
         self.pop_parent_node()
 
@@ -373,7 +375,7 @@ class CompilationEngine:
             self.writer.pop_to(("", "", "that", 0))
         else:
             self.writer.pop_to(variable)
-    
+
 
     def compile_expression_list(self, token: (str, str)) -> int:
         self.add_parent_node("expressionList")
@@ -443,7 +445,6 @@ class CompilationEngine:
         token = self.get_token()
         assert token == ("symbol", ")")
         self.write_to_xml(token)
-        self.token_idx += 1
 
         self.writer.call(subroutine_name, n_args)
 
