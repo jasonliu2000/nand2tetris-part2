@@ -16,9 +16,9 @@ class CompilationEngine:
 
     keyword_constants = ["true", "false", "null", "this"]
 
-    def __init__(self, filename: str):
+    def  __init__(self, filename: str):
         tokens_tree = ET.parse(filename)
-        self.output_filename = filename[:-5] + ".xml"
+        self.output_filename = filename[:-5] + ".vm"
         self.tokens_root = tokens_tree.getroot()
         self.tokens_count = len(self.tokens_root)
         self.symbol_table = SymbolTable()
@@ -136,6 +136,8 @@ class CompilationEngine:
 
         if subroutine_type == "method":
             self.symbol_table.add_symbol(("this", self.class_name, "argument"))
+            self.writer.push_variable(("", "", "argument", 0))
+            self.writer.pop_to(("", "", "pointer", 0))
         
         n_params = 0
 
@@ -147,7 +149,7 @@ class CompilationEngine:
         self.write_to_xml(token)
         self.token_idx += 1
 
-        VMWriter.declare_func(func_name, n_params)
+        self.writer.declare_func(func_name, n_params)
 
         self.add_parent_node("subroutineBody")
         assert self.get_token() == ("symbol", "{")
@@ -247,8 +249,8 @@ class CompilationEngine:
         self.token_idx += 1
 
         # TODO: move this code into VMWriter
-        print("not")
-        print("if-goto L1")
+        self.writer.write("not")
+        self.writer.write("if-goto L1")
 
         self.compile_statements()
         token = self.get_token()
@@ -256,8 +258,8 @@ class CompilationEngine:
         self.write_to_xml(token)
         self.token_idx += 1
 
-        print("goto L2")
-        print("label L1")
+        self.writer.write("goto L2")
+        self.writer.write("label L1")
 
         token = self.get_token()
         if token == ("keyword", "else"):
@@ -272,7 +274,7 @@ class CompilationEngine:
             self.write_to_xml(token)
             self.token_idx += 1
 
-        print("label L2")
+        self.writer.write("label L2")
 
         self.pop_parent_node()
 
@@ -289,7 +291,7 @@ class CompilationEngine:
             self.compile_expression(token, [("symbol", ";")])
         else:
             # push dummy value if not returning any actual value
-            VMWriter.push_variable(("", "", "constant", 0))
+            self.writer.push("integerConstant", 0)
         
         token = self.get_token()
         assert token[1] == ";"
@@ -298,7 +300,7 @@ class CompilationEngine:
         
         self.pop_parent_node()
 
-        VMWriter.return_func()
+        self.writer.return_func()
 
 
     def compile_do(self, token: (str, str)) -> None:
@@ -317,7 +319,7 @@ class CompilationEngine:
         self.token_idx += 1
 
         self.pop_parent_node()
-        VMWriter.pop_to(("", "", "temp", 0))
+        self.writer.pop_to(("", "", "temp", 0))
 
 
     def compile_let(self, token: (str, str)) -> None:
@@ -336,13 +338,13 @@ class CompilationEngine:
         token = self.get_token()
         if token == ("symbol", "["):
             is_array = True
-            VMWriter.push_variable(self.symbol_table.find_symbol(var_name))
+            self.writer.push_variable(self.symbol_table.find_symbol(var_name))
             self.token_idx += 1
             self.compile_expression(self.get_token(), [("symbol", "]")])
             
             assert self.get_token() == ("symbol", "]")
 
-            VMWriter.perform_operation("+")
+            self.writer.perform_operation("+")
 
             self.token_idx += 1
         
@@ -357,7 +359,7 @@ class CompilationEngine:
                 self.compile_expression(self.get_token(), [("symbol", "]")])
                 assert self.get_token() == ("symbol", "]")
 
-                VMWriter.perform_operation("+")
+                self.writer.perform_operation("+")
             elif token == ("symbol", "="):
                 self.compile_expression(self.get_token(), [("symbol", ";")])
 
@@ -365,12 +367,12 @@ class CompilationEngine:
 
         variable = self.symbol_table.find_symbol(var_name)
         if is_array:
-            VMWriter.pop_to(("", "", "temp", 0))
-            VMWriter.pop_to(("", "", "pointer", 1))
-            VMWriter.push_variable(("", "", "temp", 0))
-            VMWriter.pop_to(("", "", "that", 0))
+            self.writer.pop_to(("", "", "temp", 0))
+            self.writer.pop_to(("", "", "pointer", 1))
+            self.writer.push_variable(("", "", "temp", 0))
+            self.writer.pop_to(("", "", "that", 0))
         else:
-            VMWriter.pop_to(variable)
+            self.writer.pop_to(variable)
     
 
     def compile_expression_list(self, token: (str, str)) -> int:
@@ -404,11 +406,11 @@ class CompilationEngine:
             self.compile_term(self.get_token())
             self.token_idx += 1
             if value == "*":
-                VMWriter.call("Math.multiply", 2)
+                self.writer.call("Math.multiply", 2)
             elif value == "/":
-                VMWriter.call("Math.divide", 2)
+                self.writer.call("Math.divide", 2)
             else:
-                VMWriter.perform_operation(value)
+                self.writer.perform_operation(value)
 
         self.pop_parent_node()
 
@@ -419,7 +421,7 @@ class CompilationEngine:
         subroutine_name = ""
         var = self.symbol_table.find_symbol(value)
         if var:
-            VMWriter.push_variable(var)
+            self.writer.push_variable(var)
         else:
             subroutine_name = value
 
@@ -443,7 +445,7 @@ class CompilationEngine:
         self.write_to_xml(token)
         self.token_idx += 1
 
-        VMWriter.call(subroutine_name, n_args)
+        self.writer.call(subroutine_name, n_args)
 
     
     def compile_term(self, token: (str, str)) -> None:
@@ -454,12 +456,12 @@ class CompilationEngine:
         next_tag, next_value = next_token = self.get_token(self.token_idx + 1)
 
         if tag == "integerConstant":
-            VMWriter.push(tag, value)
+            self.writer.push(tag, value)
             # self.token_idx += 1
         elif tag == "stringConstant":
-            VMWriter.push_string(value)
+            self.writer.push_string(value)
         elif tag == "keyword" and value in self.keyword_constants:
-            VMWriter.push_keyword_constant(value)
+            self.writer.push_keyword_constant(value)
             # self.token_idx += 1
         # elif tag == "identifier" and next_tag == "symbol" and next_value in self.op_symbols:
 
@@ -472,7 +474,7 @@ class CompilationEngine:
             token = self.get_token()
             assert token == ("symbol", ")")
         elif tag == "identifier" and next_token == ("symbol", "["):
-            VMWriter.push_variable(self.symbol_table.find_symbol(value))
+            self.writer.push_variable(self.symbol_table.find_symbol(value))
             self.write_to_xml(next_token)
             self.token_idx += 2
             self.compile_expression(self.get_token(), [("symbol", "]")])
@@ -482,12 +484,12 @@ class CompilationEngine:
             self.write_to_xml(token)
             # self.token_idx += 1
 
-            VMWriter.perform_operation("+")
-            VMWriter.pop_to(("", "", "pointer", 1))
-            VMWriter.push_variable(("", "", "that", 0))
+            self.writer.perform_operation("+")
+            self.writer.pop_to(("", "", "pointer", 1))
+            self.writer.push_variable(("", "", "that", 0))
         
         elif tag == "identifier":
-            VMWriter.push_variable(self.symbol_table.find_symbol(value))
+            self.writer.push_variable(self.symbol_table.find_symbol(value))
         
         elif token == ("symbol", "("):
             self.token_idx += 1
@@ -504,9 +506,9 @@ class CompilationEngine:
             # self.token_idx += 1
 
             if value == "-":
-                VMWriter.perform_operation("neg")
+                self.writer.perform_operation("neg")
             else:
-                VMWriter.perform_operation(value)
+                self.writer.perform_operation(value)
 
         elif tag == "keyword":
             self.write_to_xml(token)
@@ -518,6 +520,7 @@ class CompilationEngine:
 
 
     def compile(self) -> None:
+        self.writer = VMWriter(self.output_filename)
         _, initial_value = self.get_token()
         assert initial_value == "class"
 
@@ -534,13 +537,15 @@ class CompilationEngine:
 
             self.token_idx += 1
 
-        tree = ET.ElementTree(root)
-        tree.write(self.output_filename)
-        self.prettify_xml(self.output_filename)
+        # tree = ET.ElementTree(root)
+        # tree.write(self.output_filename)
+        # self.prettify_xml(self.output_filename)
 
         # TODO: remove
         for table in self.symbol_table.tables:
             print(table)
+        
+        self.writer.close()
 
 
     def prettify_xml(self, file_path):

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 class VMWriter:
 
     operations = { 
@@ -12,64 +14,80 @@ class VMWriter:
     }
         # "not"
 
-    def push(tag: str, value: str) -> None:
+    def __init__(self, output_filename: str):
+        file = Path(output_filename)
+        if file.is_file():
+            file.unlink()
+
+        self.output_file = open(output_filename, "w")
+
+
+    def write(self, code: str) -> None:
+        self.output_file.write(code + "\n")
+    
+
+    def close(self) -> None:
+        self.output_file.close()
+
+
+    def push(self, tag: str, value: str) -> None:
         if tag == "integerConstant":
-            print(f'push constant {value}')
+            self.write(f'push constant {value}')
 
     
-    def push_variable(symbol_tuple) -> None:
+    def push_variable(self, symbol_tuple) -> None:
         assert len(symbol_tuple) == 4
         
         VAR_NAME, _, var_kind, index = symbol_tuple
         if var_kind == "field":
-            print(f'push this {index}', f'| {var_kind} {VAR_NAME}')
+            self.write(f'push this {index}')
         else:
-            print(f'push {var_kind} {index}', f'| {var_kind} {VAR_NAME}')
+            self.write(f'push {var_kind} {index}')
 
 
-    def push_keyword_constant(keyword) -> None:
+    def push_keyword_constant(self, keyword) -> None:
         if keyword == "this":
-            print("push pointer 0")
+            self.write("push pointer 0")
             return
         
-        print("push constant 0")
+        self.write("push constant 0")
         if keyword == "true":
-            print("not")
+            self.write("not")
 
 
-    def push_string(value) -> None:
-        print(f'push constant {len(value)}')
+    def push_string(self, value) -> None:
+        self.write(f'push constant {len(value)}')
         VMWriter.call("String.new", 1)
 
         for letter in value:
-            print(f'push constant {ord(letter)}')
+            self.write(f'push constant {ord(letter)}')
             VMWriter.call("String.appendChar", 2)
 
 
-    def pop_to(symbol_tuple) -> None:
+    def pop_to(self, symbol_tuple) -> None:
         assert len(symbol_tuple) == 4
 
         VAR_NAME, _, var_kind, index = symbol_tuple
         if var_kind == "field":
-            print(f'pop this {index}', f'| {var_kind} {VAR_NAME}')
+            self.write(f'pop this {index}')
         else:
-            print(f'pop {var_kind} {index}', f'| {var_kind} {VAR_NAME}')
+            self.write(f'pop {var_kind} {index}')
 
     
-    def perform_operation(symbol) -> None:
+    def perform_operation(self, symbol) -> None:
         if symbol not in VMWriter.operations:
             print(f'!!! Symbol {symbol} has no associated VM operation !!!')
         else:
-            print(VMWriter.operations[symbol])
+            self.write(VMWriter.operations[symbol])
 
     
-    def declare_func(func_name, n_params) -> None:
-        print(f'function {func_name} {n_params}')
+    def declare_func(self, func_name, n_params) -> None:
+        self.write(f'function {func_name} {n_params}')
     
     
-    def call(func_name, n_args) -> None:
-        print(f'call {func_name} {n_args}')
+    def call(self, func_name, n_args) -> None:
+        self.write(f'call {func_name} {n_args}')
     
 
-    def return_func() -> None:
-        print("return")
+    def return_func(self) -> None:
+        self.write("return")
