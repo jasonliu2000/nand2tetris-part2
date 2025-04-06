@@ -7,7 +7,8 @@ class VMWriter:
         "|": "or", 
         "<": "lt", 
         ">": "gt", 
-        "=": "eq"
+        "=": "eq",
+        "neg": "neg"
     }
         # "not"
 
@@ -32,7 +33,6 @@ class VMWriter:
             return
         
         print("push constant 0")
-        
         if keyword == "true":
             print("not")
 
@@ -58,7 +58,7 @@ class VMWriter:
     
     def perform_operation(symbol) -> None:
         if symbol not in VMWriter.operations:
-            print(f'!!! Symbol {symbol} has no mapping VM operation !!!')
+            print(f'!!! Symbol {symbol} has no associated VM operation !!!')
         else:
             print(VMWriter.operations[symbol])
 

@@ -256,6 +256,7 @@ class CompilationEngine:
         self.write_to_xml(token)
         self.token_idx += 1
 
+        print("goto L2")
         print("label L1")
 
         token = self.get_token()
@@ -330,7 +331,22 @@ class CompilationEngine:
         self.write_to_xml(token)
         self.token_idx += 1
 
+        is_array = False
+
         token = self.get_token()
+        if token == ("symbol", "["):
+            is_array = True
+            VMWriter.push_variable(self.symbol_table.find_symbol(var_name))
+            self.token_idx += 1
+            self.compile_expression(self.get_token(), [("symbol", "]")])
+            
+            assert self.get_token() == ("symbol", "]")
+
+            VMWriter.perform_operation("+")
+
+            self.token_idx += 1
+        
+        assert self.get_token() == ("symbol", "=")
 
         while token != ("symbol", ";"):
             token = self.get_token()
@@ -339,13 +355,22 @@ class CompilationEngine:
 
             if token == ("symbol", "["):
                 self.compile_expression(self.get_token(), [("symbol", "]")])
+                assert self.get_token() == ("symbol", "]")
+
+                VMWriter.perform_operation("+")
             elif token == ("symbol", "="):
                 self.compile_expression(self.get_token(), [("symbol", ";")])
 
         self.pop_parent_node()
 
         variable = self.symbol_table.find_symbol(var_name)
-        VMWriter.pop_to(variable)
+        if is_array:
+            VMWriter.pop_to(("", "", "temp", 0))
+            VMWriter.pop_to(("", "", "pointer", 1))
+            VMWriter.push_variable(("", "", "temp", 0))
+            VMWriter.pop_to(("", "", "that", 0))
+        else:
+            VMWriter.pop_to(variable)
     
 
     def compile_expression_list(self, token: (str, str)) -> int:
@@ -370,16 +395,18 @@ class CompilationEngine:
     def compile_expression(self, token: (str, str), end_on: [(str, str)]) -> None: # TODO: remove end_on
         self.add_parent_node("expression")
         self.compile_term(token)
+        self.token_idx += 1
 
         tag, value = token = self.get_token()
         if tag == "symbol" and value in self.op_symbols:
             self.write_to_xml(token)
             self.token_idx += 1
             self.compile_term(self.get_token())
+            self.token_idx += 1
             if value == "*":
-                print("!!! MULT SYMBOL: NEED TO CALL Math.mult() or smth like that !!!")
+                VMWriter.call("Math.multiply", 2)
             elif value == "/":
-                print("!!! DIV SYMBOL: NEED TO CALL Math.div() or smth like that !!!")
+                VMWriter.call("Math.divide", 2)
             else:
                 VMWriter.perform_operation(value)
 
@@ -424,15 +451,18 @@ class CompilationEngine:
         tag, value = token
         self.write_to_xml(token)
 
-        next_token = self.get_token(self.token_idx + 1)
+        next_tag, next_value = next_token = self.get_token(self.token_idx + 1)
 
         if tag == "integerConstant":
             VMWriter.push(tag, value)
+            # self.token_idx += 1
         elif tag == "stringConstant":
             VMWriter.push_string(value)
         elif tag == "keyword" and value in self.keyword_constants:
             VMWriter.push_keyword_constant(value)
-            self.token_idx += 1
+            # self.token_idx += 1
+        # elif tag == "identifier" and next_tag == "symbol" and next_value in self.op_symbols:
+
         elif tag == "identifier" and next_token == ("symbol", "."):
             self.compile_subroutine_call(token)
         elif tag == "identifier" and next_token == ("symbol", "("):
@@ -442,68 +472,47 @@ class CompilationEngine:
             token = self.get_token()
             assert token == ("symbol", ")")
         elif tag == "identifier" and next_token == ("symbol", "["):
+            VMWriter.push_variable(self.symbol_table.find_symbol(value))
             self.write_to_xml(next_token)
-            self.token_idx += 1
-
+            self.token_idx += 2
             self.compile_expression(self.get_token(), [("symbol", "]")])
             
             token = self.get_token()
             assert token == ("symbol", "]")
             self.write_to_xml(token)
-            self.token_idx += 1
-        # elif tag == "identifier":
-        #     result = self.symbol_table.find_symbol(value)
-        #     VMWriter.push_variable(result)
+            # self.token_idx += 1
 
-        # if tag == "identifier":
-        #     token = self.get_token()
-
-        #     if token == ("symbol", "("):
-        #         self.compile_expression(token, [("symbol", ")")])
-        #         token = self.get_token()
-        #         assert token == ("symbol", ")")
-        #     elif token == ("symbol", "["):
-        #         self.write_to_xml(token)
-        #         self.token_idx += 1
-
-        #         self.compile_expression(self.get_token(), [("symbol", "]")])
-                
-        #         token = self.get_token()
-        #         assert token == ("symbol", "]")
-        #         self.write_to_xml(token)
-        #         self.token_idx += 1
-        #     elif token == ("symbol", "."):
-        #         func_name = value
-
-        #         while token != ("symbol", "("):
-        #             _, val = token = self.get_token()
-        #             func_name += val
-        #             self.write_to_xml(token)
-        #             self.token_idx += 1
-
-        #         func_name = func_name[:-1]
-        #         print("!!! FUNC FROM LET:", func_name)
-                    
-        #         self.compile_expression_list(self.get_token())
-        #         token = self.get_token()
-        #         assert token == ("symbol", ")")
-        #         self.write_to_xml(token)
-        #         self.token_idx += 1
+            VMWriter.perform_operation("+")
+            VMWriter.pop_to(("", "", "pointer", 1))
+            VMWriter.push_variable(("", "", "that", 0))
+        
+        elif tag == "identifier":
+            VMWriter.push_variable(self.symbol_table.find_symbol(value))
         
         elif token == ("symbol", "("):
-            self.compile_expression(next_token, [("symbol", ")")])
+            self.token_idx += 1
+            self.compile_expression(self.get_token(), [("symbol", ")")])
 
             token = self.get_token()
             assert token == ("symbol", ")")
             self.write_to_xml(token)
-            self.token_idx += 1
+            # self.token_idx += 1
 
         elif tag == "symbol" and value in self.unary_op:
-            self.compile_term(next_token)
+            self.token_idx += 1
+            self.compile_term(self.get_token())
+            # self.token_idx += 1
+
+            if value == "-":
+                VMWriter.perform_operation("neg")
+            else:
+                VMWriter.perform_operation(value)
 
         elif tag == "keyword":
             self.write_to_xml(token)
-            self.token_idx += 1
+            # self.token_idx += 1
+        
+        # self.token_idx += 1
 
         self.pop_parent_node()
 
