@@ -43,5 +43,9 @@ class VMWriter:
             print(VMWriter.operations[symbol])
 
     
+    def declare_func(func_name, n_params) -> None:
+        print(f'function {func_name} {n_params}')
+    
+    
     def call(func_name, n_args) -> None:
         print(f'call {func_name} {n_args}')

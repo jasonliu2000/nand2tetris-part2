@@ -78,7 +78,7 @@ class CompilationEngine:
             
             
     def compile_var(self, token: (str, str)) -> None:
-        _, var_kind = self.get_token()
+        _, var_kind = token
         self.token_idx += 1
 
         _, var_type = self.get_token()
@@ -87,43 +87,65 @@ class CompilationEngine:
         while token != ("symbol", ";"):
             _, var_name = token = self.get_token()
             if var_name not in [",", ";"]:
+                print((var_name, var_type, var_kind))
                 self.symbol_table.add_symbol((var_name, var_type, var_kind))
 
             self.token_idx += 1
 
 
-    def compile_parameters(self, token: (str, str)) -> None:
+    def compile_parameters(self, token: (str, str)) -> int:
+        n_params = 0
         while token != ("symbol", ")"):
             _, var_type = token
             if var_type != ",":
                 self.token_idx += 1
                 _, var_name = self.get_token()
+
                 self.symbol_table.add_symbol((var_name, var_type, "argument"))
+                n_params += 1
 
             self.token_idx += 1
             token = self.get_token()
+        
+        return n_params
 
 
     def compile_subroutine(self, token: (str, str), subroutine_type: str) -> None:
         self.add_parent_node("subroutineDec")
-        while token != ("symbol", "("):
-            token = self.get_token()
-            self.write_to_xml(token)
-            self.token_idx += 1
+
+        self.write_to_xml(token)
+        self.token_idx += 1
+
+        _, return_type = token = self.get_token()
+        self.write_to_xml(token)
+        self.token_idx += 1
+
+        _, func_name = token = self.get_token()
+        self.write_to_xml(token)
+        self.token_idx += 1
+
+        token = self.get_token()
+        assert token == ("symbol", "(")
+        self.write_to_xml(token)
+        self.token_idx += 1
         
         self.add_parent_node("parameterList")
         token = self.get_token()
 
         if subroutine_type == "method":
             self.symbol_table.add_symbol(("this", self.class_name, "argument"))
+        
+        n_params = 0
 
         if token != ("symbol", ")"):
-            self.compile_parameters(token)
+            n_params = self.compile_parameters(token)
 
         token = self.get_token()        
         self.pop_parent_node()
         self.write_to_xml(token)
         self.token_idx += 1
+
+        VMWriter.declare_func(func_name, n_params)
 
         self.add_parent_node("subroutineBody")
         assert self.get_token() == ("symbol", "{")
@@ -254,6 +276,9 @@ class CompilationEngine:
         token = self.get_token()
         if token != ("symbol", ";"):
             self.compile_expression(token, [("symbol", ";")])
+        else:
+            # push dummy value if not returning any actual value
+            VMWriter.push_variable(("", "", "constant", 0))
         
         token = self.get_token()
         assert token[1] == ";"
@@ -270,27 +295,17 @@ class CompilationEngine:
         self.token_idx += 1
 
         _, func_name = token = self.get_token()
+
+        self.compile_subroutine_call(token)
+
+        token = self.get_token()
+        assert token == ("symbol", ";")
         self.write_to_xml(token)
         self.token_idx += 1
 
-        n_args = 0
-
-        while token != ("symbol", ";"):
-            token = self.get_token()
-            self.write_to_xml(token)
-            self.token_idx += 1
-
-            if token == ("symbol", "("):
-                n_args = self.compile_expression_list(self.get_token())
-                token = self.get_token()
-                assert token == ("symbol", ")")
-                self.write_to_xml(token)
-                self.token_idx += 1
-
         self.pop_parent_node()
+        VMWriter.pop_to(("", "", "temp", 0))
 
-        VMWriter.call(func_name, n_args)
-    
 
     def compile_let(self, token: (str, str)) -> None:
         self.add_parent_node("letStatement")
@@ -340,7 +355,7 @@ class CompilationEngine:
         return n_args
 
 
-    def compile_expression(self, token: (str, str), end_on: [(str, str)]) -> None:
+    def compile_expression(self, token: (str, str), end_on: [(str, str)]) -> None: # TODO: remove end_on
         self.add_parent_node("expression")
         self.compile_term(token)
 
@@ -358,51 +373,109 @@ class CompilationEngine:
 
         self.pop_parent_node()
 
+
+    def compile_subroutine_call(self, token: (str, str)) -> None:
+        tag, value = token
+
+        subroutine_name = ""
+        var = self.symbol_table.find_symbol(value)
+        if var:
+            VMWriter.push_variable(var)
+        else:
+            subroutine_name = value
+
+        self.token_idx += 1
+        _, val = token = self.get_token()
+
+        while token != ("symbol", "("):
+            if val != "." or not var:
+                subroutine_name += val
+
+            self.write_to_xml(token)
+            self.token_idx += 1
+            _, val = token = self.get_token()
+
+        self.write_to_xml(token)
+        self.token_idx += 1
+            
+        n_args = self.compile_expression_list(self.get_token())
+        token = self.get_token()
+        assert token == ("symbol", ")")
+        self.write_to_xml(token)
+        self.token_idx += 1
+
+        VMWriter.call(subroutine_name, n_args)
+
     
     def compile_term(self, token: (str, str)) -> None:
         self.add_parent_node("term")
         tag, value = token
         self.write_to_xml(token)
 
+        next_token = self.get_token(self.token_idx + 1)
+
         if tag == "integerConstant":
             VMWriter.push(tag, value)
-        elif tag == "identifier":
-            result = self.symbol_table.find_symbol(value)
-            VMWriter.push_variable(result)
+        elif tag == "identifier" and next_token == ("symbol", "."):
+            self.compile_subroutine_call(token)
 
-        self.token_idx += 1
-
-        if tag == "identifier":
+        elif tag == "identifier" and next_token == ("symbol", "("):
+            self.token_idx += 1
+            self.write_to_xml(self.get_token())
+            self.compile_expression(self.get_token(), [("symbol", ")")])
             token = self.get_token()
+            assert token == ("symbol", ")")
+        elif tag == "identifier" and next_token == ("symbol", "["):
+            self.write_to_xml(next_token)
+            self.token_idx += 1
 
-            if token == ("symbol", "("):
-                self.compile_expression(token, [("symbol", ")")])
-                token = self.get_token()
-                assert token == ("symbol", ")")
-            elif token == ("symbol", "["):
-                self.write_to_xml(token)
-                self.token_idx += 1
+            self.compile_expression(self.get_token(), [("symbol", "]")])
+            
+            token = self.get_token()
+            assert token == ("symbol", "]")
+            self.write_to_xml(token)
+            self.token_idx += 1
+        # elif tag == "identifier":
+        #     result = self.symbol_table.find_symbol(value)
+        #     VMWriter.push_variable(result)
 
-                self.compile_expression(self.get_token(), [("symbol", "]")])
+        # if tag == "identifier":
+        #     token = self.get_token()
+
+        #     if token == ("symbol", "("):
+        #         self.compile_expression(token, [("symbol", ")")])
+        #         token = self.get_token()
+        #         assert token == ("symbol", ")")
+        #     elif token == ("symbol", "["):
+        #         self.write_to_xml(token)
+        #         self.token_idx += 1
+
+        #         self.compile_expression(self.get_token(), [("symbol", "]")])
                 
-                token = self.get_token()
-                assert token == ("symbol", "]")
-                self.write_to_xml(token)
-                self.token_idx += 1
-            elif token == ("symbol", "."):
-                while token != ("symbol", "("):
-                    token = self.get_token()
-                    self.write_to_xml(token)
-                    self.token_idx += 1
+        #         token = self.get_token()
+        #         assert token == ("symbol", "]")
+        #         self.write_to_xml(token)
+        #         self.token_idx += 1
+        #     elif token == ("symbol", "."):
+        #         func_name = value
+
+        #         while token != ("symbol", "("):
+        #             _, val = token = self.get_token()
+        #             func_name += val
+        #             self.write_to_xml(token)
+        #             self.token_idx += 1
+
+        #         func_name = func_name[:-1]
+        #         print("!!! FUNC FROM LET:", func_name)
                     
-                self.compile_expression_list(self.get_token())
-                token = self.get_token()
-                assert token == ("symbol", ")")
-                self.write_to_xml(token)
-                self.token_idx += 1
+        #         self.compile_expression_list(self.get_token())
+        #         token = self.get_token()
+        #         assert token == ("symbol", ")")
+        #         self.write_to_xml(token)
+        #         self.token_idx += 1
         
         elif token == ("symbol", "("):
-            self.compile_expression(self.get_token(), [("symbol", ")")])
+            self.compile_expression(next_token, [("symbol", ")")])
 
             token = self.get_token()
             assert token == ("symbol", ")")
@@ -410,7 +483,11 @@ class CompilationEngine:
             self.token_idx += 1
 
         elif tag == "symbol" and value in self.unary_op:
-            self.compile_term(self.get_token())
+            self.compile_term(next_token)
+
+        elif tag == "keyword":
+            self.write_to_xml(token)
+            self.token_idx += 1
 
         self.pop_parent_node()
 
