@@ -13,8 +13,9 @@ class CompilationEngine:
 
     op_symbols = { "+", "-", "*", "/", "&", "|", "<", ">", "=" }
     unary_op = { "-", "~" }
-
     keyword_constants = ["true", "false", "null", "this"]
+
+    loop_counter = 0
 
     def  __init__(self, filename: str):
         tokens_tree = ET.parse(filename)
@@ -208,12 +209,20 @@ class CompilationEngine:
             token = self.get_token()
             self.write_to_xml(token)
             self.token_idx += 1
+
+        while_label, exit_label = self.loop_counter, self.loop_counter + 1
+        self.loop_counter += 2
+
+        self.writer.write(f'label L{while_label}')
         
         self.compile_expression(self.get_token(), [("symbol", ")")])
         token = self.get_token()
         assert token[1] == ")"
         self.write_to_xml(token)
         self.token_idx += 1
+
+        self.writer.write("not")
+        self.writer.write(f'if-goto L{exit_label}')
 
         token = self.get_token()
         assert token[1] == "{"
@@ -225,6 +234,9 @@ class CompilationEngine:
         assert token[1] == "}"
         self.write_to_xml(token)
         self.token_idx += 1
+
+        self.writer.write(f'goto L{while_label}')
+        self.writer.write(f'label L{exit_label}')
 
         self.pop_parent_node()
 
@@ -249,8 +261,11 @@ class CompilationEngine:
         self.token_idx += 1
 
         # TODO: move this code into VMWriter
+        else_label, exit_label = self.loop_counter, self.loop_counter + 1
+        self.loop_counter += 2
+
         self.writer.write("not")
-        self.writer.write("if-goto L1")
+        self.writer.write(f'if-goto L{else_label}')
 
         self.compile_statements()
         token = self.get_token()
@@ -258,8 +273,8 @@ class CompilationEngine:
         self.write_to_xml(token)
         self.token_idx += 1
 
-        self.writer.write("goto L2")
-        self.writer.write("label L1")
+        self.writer.write(f'goto L{exit_label}')
+        self.writer.write(f'label L{else_label}')
 
         token = self.get_token()
         if token == ("keyword", "else"):
@@ -274,7 +289,7 @@ class CompilationEngine:
             self.write_to_xml(token)
             self.token_idx += 1
 
-        self.writer.write("label L2")
+        self.writer.write(f'label L{exit_label}')
 
         self.pop_parent_node()
 
