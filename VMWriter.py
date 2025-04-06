@@ -49,3 +49,7 @@ class VMWriter:
     
     def call(func_name, n_args) -> None:
         print(f'call {func_name} {n_args}')
+    
+
+    def return_func() -> None:
+        print("return")

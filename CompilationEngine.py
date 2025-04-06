@@ -287,6 +287,8 @@ class CompilationEngine:
         
         self.pop_parent_node()
 
+        VMWriter.return_func()
+
 
     def compile_do(self, token: (str, str)) -> None:
         self.add_parent_node("doStatement")
