@@ -193,7 +193,7 @@ class CompilationEngine:
 
         self.writer.write(f'label L{while_label}')
         
-        self.compile_expression(self.get_token(), [("symbol", ")")])
+        self.compile_expression(self.get_token())
         token = self.get_token()
         assert token[1] == ")"
         self.token_idx += 1
@@ -223,7 +223,7 @@ class CompilationEngine:
             token = self.get_token()
             self.token_idx += 1
 
-        self.compile_expression(self.get_token(), [("symbol", ")")])
+        self.compile_expression(self.get_token())
         token = self.get_token()
         assert token[1] == ")"
         self.token_idx += 1
@@ -270,7 +270,7 @@ class CompilationEngine:
         
         token = self.get_token()
         if token != ("symbol", ";"):
-            self.compile_expression(token, [("symbol", ";")])
+            self.compile_expression(token)
         else:
             # push dummy value if not returning any actual value
             self.writer.push("integerConstant", 0)
@@ -329,12 +329,12 @@ class CompilationEngine:
             self.token_idx += 1
 
             if token == ("symbol", "["):
-                self.compile_expression(self.get_token(), [("symbol", "]")])
+                self.compile_expression(self.get_token())
                 assert self.get_token() == ("symbol", "]")
 
                 self.writer.perform_operation("+")
             elif token == ("symbol", "="):
-                self.compile_expression(self.get_token(), [("symbol", ";")])
+                self.compile_expression(self.get_token())
                 assert self.get_token() == ("symbol", ";")
 
         self.pop_parent_node()
@@ -351,14 +351,13 @@ class CompilationEngine:
 
     def compile_expression_list(self, token: (str, str)) -> int:
         self.add_parent_node("expressionList")
-        end_tokens = [("symbol", ","), ("symbol", ")")]
         n_args = 0
 
         while token != ("symbol", ")"):
             if token == ("symbol", ","):
                 self.token_idx += 1
             else:
-                self.compile_expression(token, end_tokens)
+                self.compile_expression(token)
                 n_args += 1
 
             token = self.get_token()
@@ -367,7 +366,7 @@ class CompilationEngine:
         return n_args
 
 
-    def compile_expression(self, token: (str, str), end_on: [(str, str)]) -> None: # TODO: remove end_on
+    def compile_expression(self, token: (str, str)) -> None:
         self.add_parent_node("expression")
         self.compile_term(token)
         self.token_idx += 1
@@ -455,7 +454,7 @@ class CompilationEngine:
         
         elif token == ("symbol", "("):
             self.token_idx += 1
-            self.compile_expression(self.get_token(), [("symbol", ")")])
+            self.compile_expression(self.get_token())
 
             token = self.get_token()
             assert token == ("symbol", ")")
