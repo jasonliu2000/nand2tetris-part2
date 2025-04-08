@@ -29,7 +29,6 @@ function Ball.dispose 0
 push argument 0
 pop pointer 0
 push pointer 0
-push pointer 0
 call Memory.deAlloc 1
 pop temp 0
 push constant 0
@@ -37,7 +36,6 @@ return
 function Ball.show 0
 push argument 0
 pop pointer 0
-push pointer 0
 push constant 0
 not
 call Screen.setColor 1
@@ -50,7 +48,6 @@ return
 function Ball.hide 0
 push argument 0
 pop pointer 0
-push pointer 0
 push constant 0
 call Screen.setColor 1
 pop temp 0
@@ -62,7 +59,6 @@ return
 function Ball.draw 0
 push argument 0
 pop pointer 0
-push pointer 0
 push this 0
 push this 1
 push this 0
@@ -98,11 +94,9 @@ push argument 2
 push this 1
 sub
 pop this 3
-push pointer 0
 push this 2
 call Math.abs 1
 pop local 0
-push pointer 0
 push this 3
 call Math.abs 1
 pop local 1
