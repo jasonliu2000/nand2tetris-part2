@@ -479,14 +479,10 @@ class CompilationEngine:
 
         if tag == "integerConstant":
             self.writer.push(tag, value)
-            # self.token_idx += 1
         elif tag == "stringConstant":
             self.writer.push_string(value)
         elif tag == "keyword" and value in self.keyword_constants:
             self.writer.push_keyword_constant(value)
-            # self.token_idx += 1
-        # elif tag == "identifier" and next_tag == "symbol" and next_value in self.op_symbols:
-
         elif tag == "identifier" and next_token == ("symbol", "."):
             self.compile_subroutine_call(token)
         elif tag == "identifier" and next_token == ("symbol", "("):
@@ -504,7 +500,6 @@ class CompilationEngine:
             token = self.get_token()
             assert token == ("symbol", "]")
             self.write_to_xml(token)
-            # self.token_idx += 1
 
             self.writer.perform_operation("+")
             self.writer.pop_to(("", "", "pointer", 1))
@@ -520,12 +515,10 @@ class CompilationEngine:
             token = self.get_token()
             assert token == ("symbol", ")")
             self.write_to_xml(token)
-            # self.token_idx += 1
 
         elif tag == "symbol" and value in self.unary_op:
             self.token_idx += 1
             self.compile_term(self.get_token())
-            # self.token_idx += 1
 
             if value == "-":
                 self.writer.perform_operation("neg")
@@ -534,9 +527,6 @@ class CompilationEngine:
 
         elif tag == "keyword":
             self.write_to_xml(token)
-            # self.token_idx += 1
-        
-        # self.token_idx += 1
 
         self.pop_parent_node()
 
