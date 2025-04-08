@@ -50,9 +50,7 @@ def remove_comments(filename: str) -> str:
 
             cleaned_code += remove_inline_comments(stripped_line)
         
-        # print(cleaned_code)
         cleaned_code = remove_doc_comments(cleaned_code)
-        # print(cleaned_code)
         return cleaned_code
 
 
