@@ -34,6 +34,10 @@ class CompilationEngine:
             value = value.strip()
         
         return (tag, value)
+
+
+    def next_token(self) -> None:
+        self.token_idx += 1
     
 
     def get_parent_node(self) -> Union[ET.Element, None]:
@@ -49,17 +53,17 @@ class CompilationEngine:
 
 
     def compile_class(self, token: (str, str)) -> None:
-        self.token_idx += 1
+        self.next_token()
         _, self.class_name = token = self.get_token()
-        self.token_idx += 1
+        self.next_token()
         token = self.get_token()
-        self.token_idx += 1
+        self.next_token()
         
         while self.get_parent_node() == "class":
             _, property_type = token = self.get_token()
 
             if token == ("symbol", "}"):
-                self.token_idx += 1
+                self.next_token()
                 self.pop_parent_node()
 
             if property_type in ["static", "field"]:
@@ -71,43 +75,43 @@ class CompilationEngine:
             
     def compile_var(self, token: (str, str)) -> None:
         _, var_kind = token
-        self.token_idx += 1
+        self.next_token()
 
         _, var_type = self.get_token()
-        self.token_idx += 1
+        self.next_token()
 
         while token != ("symbol", ";"):
             _, var_name = token = self.get_token()
             if var_name not in [",", ";"]:
                 self.symbol_table.add_symbol((var_name, var_type, var_kind))
 
-            self.token_idx += 1
+            self.next_token()
 
 
     def compile_parameters(self, token: (str, str)) -> None:
         while token != ("symbol", ")"):
             _, var_type = token
             if var_type != ",":
-                self.token_idx += 1
+                self.next_token()
                 _, var_name = self.get_token()
                 self.symbol_table.add_symbol((var_name, var_type, "argument"))
 
-            self.token_idx += 1
+            self.next_token()
             token = self.get_token()
 
 
     def compile_subroutine(self, token: (str, str), subroutine_type: str) -> None:
         self.add_parent_node("subroutineDec")
-        self.token_idx += 1
+        self.next_token()
         _, return_type = token = self.get_token()
-        self.token_idx += 1
+        self.next_token()
 
         _, func_name = token = self.get_token()
-        self.token_idx += 1
+        self.next_token()
 
         token = self.get_token()
         assert token == ("symbol", "(")
-        self.token_idx += 1
+        self.next_token()
         
         self.add_parent_node("parameterList")
         token = self.get_token()
@@ -120,19 +124,19 @@ class CompilationEngine:
 
         token = self.get_token()        
         self.pop_parent_node()
-        self.token_idx += 1
+        self.next_token()
 
         func_declared = False
 
         self.add_parent_node("subroutineBody")
         assert self.get_token() == ("symbol", "{")
-        self.token_idx += 1
+        self.next_token()
 
         while self.node_stack[-1].tag == "subroutineBody":
             _, property_type = token = self.get_token()
 
             if token == ("symbol", "}"):
-                self.token_idx += 1
+                self.next_token()
                 self.pop_parent_node()
                 break
 
@@ -186,7 +190,7 @@ class CompilationEngine:
         self.add_parent_node("whileStatement")
         while token != ("symbol", "("):
             token = self.get_token()
-            self.token_idx += 1
+            self.next_token()
 
         while_label, exit_label = self.loop_counter, self.loop_counter + 1
         self.loop_counter += 2
@@ -196,19 +200,19 @@ class CompilationEngine:
         self.compile_expression(self.get_token())
         token = self.get_token()
         assert token[1] == ")"
-        self.token_idx += 1
+        self.next_token()
 
         self.writer.write("not")
         self.writer.write(f'if-goto L{exit_label}')
 
         token = self.get_token()
         assert token[1] == "{"
-        self.token_idx += 1
+        self.next_token()
 
         self.compile_statements()
         token = self.get_token()
         assert token[1] == "}"
-        self.token_idx += 1
+        self.next_token()
 
         self.writer.write(f'goto L{while_label}')
         self.writer.write(f'label L{exit_label}')
@@ -221,16 +225,16 @@ class CompilationEngine:
 
         while token != ("symbol", "("):
             token = self.get_token()
-            self.token_idx += 1
+            self.next_token()
 
         self.compile_expression(self.get_token())
         token = self.get_token()
         assert token[1] == ")"
-        self.token_idx += 1
+        self.next_token()
 
         token = self.get_token()
         assert token[1] == "{"
-        self.token_idx += 1
+        self.next_token()
 
         # TODO: move this code into VMWriter
         else_label, exit_label = self.loop_counter, self.loop_counter + 1
@@ -242,20 +246,20 @@ class CompilationEngine:
         self.compile_statements()
         token = self.get_token()
         assert token[1] == "}"
-        self.token_idx += 1
+        self.next_token()
 
         self.writer.write(f'goto L{exit_label}')
         self.writer.write(f'label L{else_label}')
 
         token = self.get_token()
         if token == ("keyword", "else"):
-            self.token_idx += 1
-            self.token_idx += 1
+            self.next_token()
+            self.next_token()
 
             self.compile_statements()
             token = self.get_token()
             assert token[1] == "}"
-            self.token_idx += 1
+            self.next_token()
 
         self.writer.write(f'label L{exit_label}')
 
@@ -266,7 +270,7 @@ class CompilationEngine:
         self.add_parent_node("returnStatement")
 
         assert token[1] == "return"
-        self.token_idx += 1
+        self.next_token()
         
         token = self.get_token()
         if token != ("symbol", ";"):
@@ -277,7 +281,7 @@ class CompilationEngine:
         
         token = self.get_token()
         assert token[1] == ";"
-        self.token_idx += 1
+        self.next_token()
         
         self.pop_parent_node()
 
@@ -286,14 +290,14 @@ class CompilationEngine:
 
     def compile_do(self, token: (str, str)) -> None:
         self.add_parent_node("doStatement")
-        self.token_idx += 1
+        self.next_token()
         _, func_name = token = self.get_token()
         self.compile_subroutine_call(token)
 
-        self.token_idx += 1
+        self.next_token()
         token = self.get_token()
         assert token == ("symbol", ";")
-        self.token_idx += 1
+        self.next_token()
 
         self.pop_parent_node()
         self.writer.pop_to(("", "", "temp", 0))
@@ -301,11 +305,11 @@ class CompilationEngine:
 
     def compile_let(self, token: (str, str)) -> None:
         self.add_parent_node("letStatement")
-        self.token_idx += 1
+        self.next_token()
 
         kind, var_name = token = self.get_token()
         assert kind == "identifier"
-        self.token_idx += 1
+        self.next_token()
 
         is_array = False
 
@@ -313,20 +317,20 @@ class CompilationEngine:
         if token == ("symbol", "["):
             is_array = True
             self.writer.push_variable(self.symbol_table.find_symbol(var_name))
-            self.token_idx += 1
+            self.next_token()
             self.compile_expression(self.get_token(), [("symbol", "]")])
             
             assert self.get_token() == ("symbol", "]")
 
             self.writer.perform_operation("+")
 
-            self.token_idx += 1
+            self.next_token()
         
         assert self.get_token() == ("symbol", "=")
 
         while token != ("symbol", ";"):
             token = self.get_token()
-            self.token_idx += 1
+            self.next_token()
 
             if token == ("symbol", "["):
                 self.compile_expression(self.get_token())
@@ -355,7 +359,7 @@ class CompilationEngine:
 
         while token != ("symbol", ")"):
             if token == ("symbol", ","):
-                self.token_idx += 1
+                self.next_token()
             else:
                 self.compile_expression(token)
                 n_args += 1
@@ -369,13 +373,13 @@ class CompilationEngine:
     def compile_expression(self, token: (str, str)) -> None:
         self.add_parent_node("expression")
         self.compile_term(token)
-        self.token_idx += 1
+        self.next_token()
 
         tag, value = token = self.get_token()
         if tag == "symbol" and value in self.op_symbols:
-            self.token_idx += 1
+            self.next_token()
             self.compile_term(self.get_token())
-            self.token_idx += 1
+            self.next_token()
             if value == "*":
                 self.writer.call("Math.multiply", 2)
             elif value == "/":
@@ -402,15 +406,15 @@ class CompilationEngine:
         else:
             subroutine_name = value
 
-        self.token_idx += 1
+        self.next_token()
         _, val = token = self.get_token()
 
         while token != ("symbol", "("):
             subroutine_name += val
-            self.token_idx += 1
+            self.next_token()
             _, val = token = self.get_token()
 
-        self.token_idx += 1
+        self.next_token()
             
         n_args += self.compile_expression_list(self.get_token())
         token = self.get_token()
@@ -433,13 +437,14 @@ class CompilationEngine:
         elif tag == "identifier" and next_token == ("symbol", "."):
             self.compile_subroutine_call(token)
         elif tag == "identifier" and next_token == ("symbol", "("):
-            self.token_idx += 1
+            self.next_token()
             self.compile_expression(self.get_token(), [("symbol", ")")])
             token = self.get_token()
             assert token == ("symbol", ")")
         elif tag == "identifier" and next_token == ("symbol", "["):
             self.writer.push_variable(self.symbol_table.find_symbol(value))
-            self.token_idx += 2
+            self.next_token()
+            self.next_token()
             self.compile_expression(self.get_token(), [("symbol", "]")])
             
             token = self.get_token()
@@ -453,14 +458,14 @@ class CompilationEngine:
             self.writer.push_variable(self.symbol_table.find_symbol(value))
         
         elif token == ("symbol", "("):
-            self.token_idx += 1
+            self.next_token()
             self.compile_expression(self.get_token())
 
             token = self.get_token()
             assert token == ("symbol", ")")
 
         elif tag == "symbol" and value in self.unary_op:
-            self.token_idx += 1
+            self.next_token()
             self.compile_term(self.get_token())
 
             if value == "-":
@@ -487,6 +492,6 @@ class CompilationEngine:
                 self.compile_class(token)
                 continue
 
-            self.token_idx += 1
+            self.next_token()
         
         self.writer.close()
