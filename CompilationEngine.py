@@ -480,7 +480,7 @@ class CompilationEngine:
         if tag == "integerConstant":
             self.writer.push(tag, value)
         elif tag == "stringConstant":
-            self.writer.push_string(value)
+            self.writer.push_string(value[1:-1])
         elif tag == "keyword" and value in self.keyword_constants:
             self.writer.push_keyword_constant(value)
         elif tag == "identifier" and next_token == ("symbol", "."):
