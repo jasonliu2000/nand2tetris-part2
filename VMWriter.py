@@ -57,11 +57,11 @@ class VMWriter:
 
     def push_string(self, value) -> None:
         self.write(f'push constant {len(value)}')
-        VMWriter.call("String.new", 1)
+        self.call("String.new", 1)
 
         for letter in value:
             self.write(f'push constant {ord(letter)}')
-            VMWriter.call("String.appendChar", 2)
+            self.call("String.appendChar", 2)
 
 
     def pop_to(self, symbol_tuple) -> None:
@@ -75,10 +75,10 @@ class VMWriter:
 
     
     def perform_operation(self, symbol) -> None:
-        if symbol not in VMWriter.operations:
+        if symbol not in self.operations:
             print(f'!!! Symbol {symbol} has no associated VM operation !!!')
         else:
-            self.write(VMWriter.operations[symbol])
+            self.write(self.operations[symbol])
 
     
     def declare_constructor(self, class_name, func_name, fields_count, local_vars) -> None:
