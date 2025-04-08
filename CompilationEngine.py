@@ -34,11 +34,6 @@ class CompilationEngine:
             value = value.strip()
         
         return (tag, value)
-
-
-    def write_to_xml(self, token: (str, str)) -> None:
-        tag, value = token
-        ET.SubElement(self.node_stack[-1], tag).text = f' {value} ' if tag != "stringConstant" else value
     
 
     def get_parent_node(self) -> Union[ET.Element, None]:
@@ -54,22 +49,16 @@ class CompilationEngine:
 
 
     def compile_class(self, token: (str, str)) -> None:
-        self.write_to_xml(token)
         self.token_idx += 1
-
         _, self.class_name = token = self.get_token()
-        self.write_to_xml(token)
         self.token_idx += 1
-
         token = self.get_token()
-        self.write_to_xml(token)
         self.token_idx += 1
         
         while self.get_parent_node() == "class":
             _, property_type = token = self.get_token()
 
             if token == ("symbol", "}"):
-                self.write_to_xml(token)
                 self.token_idx += 1
                 self.pop_parent_node()
 
@@ -90,7 +79,6 @@ class CompilationEngine:
         while token != ("symbol", ";"):
             _, var_name = token = self.get_token()
             if var_name not in [",", ";"]:
-                print((var_name, var_type, var_kind))
                 self.symbol_table.add_symbol((var_name, var_type, var_kind))
 
             self.token_idx += 1
@@ -110,21 +98,15 @@ class CompilationEngine:
 
     def compile_subroutine(self, token: (str, str), subroutine_type: str) -> None:
         self.add_parent_node("subroutineDec")
-
-        self.write_to_xml(token)
         self.token_idx += 1
-
         _, return_type = token = self.get_token()
-        self.write_to_xml(token)
         self.token_idx += 1
 
         _, func_name = token = self.get_token()
-        self.write_to_xml(token)
         self.token_idx += 1
 
         token = self.get_token()
         assert token == ("symbol", "(")
-        self.write_to_xml(token)
         self.token_idx += 1
         
         self.add_parent_node("parameterList")
@@ -138,21 +120,18 @@ class CompilationEngine:
 
         token = self.get_token()        
         self.pop_parent_node()
-        self.write_to_xml(token)
         self.token_idx += 1
 
         func_declared = False
 
         self.add_parent_node("subroutineBody")
         assert self.get_token() == ("symbol", "{")
-        self.write_to_xml(self.get_token())
         self.token_idx += 1
 
         while self.node_stack[-1].tag == "subroutineBody":
             _, property_type = token = self.get_token()
 
             if token == ("symbol", "}"):
-                self.write_to_xml(token)
                 self.token_idx += 1
                 self.pop_parent_node()
                 break
@@ -174,7 +153,6 @@ class CompilationEngine:
 
             self.compile_statements()
         
-        # print(self.symbol_table.subroutine_symbols)
         self.pop_parent_node()
         self.symbol_table.clear_subroutine_symbols()
 
@@ -208,7 +186,6 @@ class CompilationEngine:
         self.add_parent_node("whileStatement")
         while token != ("symbol", "("):
             token = self.get_token()
-            self.write_to_xml(token)
             self.token_idx += 1
 
         while_label, exit_label = self.loop_counter, self.loop_counter + 1
@@ -219,7 +196,6 @@ class CompilationEngine:
         self.compile_expression(self.get_token(), [("symbol", ")")])
         token = self.get_token()
         assert token[1] == ")"
-        self.write_to_xml(token)
         self.token_idx += 1
 
         self.writer.write("not")
@@ -227,13 +203,11 @@ class CompilationEngine:
 
         token = self.get_token()
         assert token[1] == "{"
-        self.write_to_xml(token)
         self.token_idx += 1
 
         self.compile_statements()
         token = self.get_token()
         assert token[1] == "}"
-        self.write_to_xml(token)
         self.token_idx += 1
 
         self.writer.write(f'goto L{while_label}')
@@ -247,18 +221,15 @@ class CompilationEngine:
 
         while token != ("symbol", "("):
             token = self.get_token()
-            self.write_to_xml(token)
             self.token_idx += 1
 
         self.compile_expression(self.get_token(), [("symbol", ")")])
         token = self.get_token()
         assert token[1] == ")"
-        self.write_to_xml(token)
         self.token_idx += 1
 
         token = self.get_token()
         assert token[1] == "{"
-        self.write_to_xml(token)
         self.token_idx += 1
 
         # TODO: move this code into VMWriter
@@ -271,7 +242,6 @@ class CompilationEngine:
         self.compile_statements()
         token = self.get_token()
         assert token[1] == "}"
-        self.write_to_xml(token)
         self.token_idx += 1
 
         self.writer.write(f'goto L{exit_label}')
@@ -279,15 +249,12 @@ class CompilationEngine:
 
         token = self.get_token()
         if token == ("keyword", "else"):
-            self.write_to_xml(token)
             self.token_idx += 1
-            self.write_to_xml(self.get_token())
             self.token_idx += 1
 
             self.compile_statements()
             token = self.get_token()
             assert token[1] == "}"
-            self.write_to_xml(token)
             self.token_idx += 1
 
         self.writer.write(f'label L{exit_label}')
@@ -299,7 +266,6 @@ class CompilationEngine:
         self.add_parent_node("returnStatement")
 
         assert token[1] == "return"
-        self.write_to_xml(token)
         self.token_idx += 1
         
         token = self.get_token()
@@ -311,7 +277,6 @@ class CompilationEngine:
         
         token = self.get_token()
         assert token[1] == ";"
-        self.write_to_xml(token)
         self.token_idx += 1
         
         self.pop_parent_node()
@@ -321,18 +286,13 @@ class CompilationEngine:
 
     def compile_do(self, token: (str, str)) -> None:
         self.add_parent_node("doStatement")
-
-        self.write_to_xml(token)
         self.token_idx += 1
-
         _, func_name = token = self.get_token()
-
         self.compile_subroutine_call(token)
 
         self.token_idx += 1
         token = self.get_token()
         assert token == ("symbol", ";")
-        self.write_to_xml(token)
         self.token_idx += 1
 
         self.pop_parent_node()
@@ -341,13 +301,10 @@ class CompilationEngine:
 
     def compile_let(self, token: (str, str)) -> None:
         self.add_parent_node("letStatement")
-        
-        self.write_to_xml(token)
         self.token_idx += 1
 
         kind, var_name = token = self.get_token()
         assert kind == "identifier"
-        self.write_to_xml(token)
         self.token_idx += 1
 
         is_array = False
@@ -369,7 +326,6 @@ class CompilationEngine:
 
         while token != ("symbol", ";"):
             token = self.get_token()
-            self.write_to_xml(token)
             self.token_idx += 1
 
             if token == ("symbol", "["):
@@ -400,7 +356,6 @@ class CompilationEngine:
 
         while token != ("symbol", ")"):
             if token == ("symbol", ","):
-                self.write_to_xml(token)
                 self.token_idx += 1
             else:
                 self.compile_expression(token, end_tokens)
@@ -419,7 +374,6 @@ class CompilationEngine:
 
         tag, value = token = self.get_token()
         if tag == "symbol" and value in self.op_symbols:
-            self.write_to_xml(token)
             self.token_idx += 1
             self.compile_term(self.get_token())
             self.token_idx += 1
@@ -454,18 +408,14 @@ class CompilationEngine:
 
         while token != ("symbol", "("):
             subroutine_name += val
-
-            self.write_to_xml(token)
             self.token_idx += 1
             _, val = token = self.get_token()
 
-        self.write_to_xml(token)
         self.token_idx += 1
             
         n_args += self.compile_expression_list(self.get_token())
         token = self.get_token()
         assert token == ("symbol", ")")
-        self.write_to_xml(token)
 
         self.writer.call(subroutine_name, n_args, self.class_name)
 
@@ -473,8 +423,6 @@ class CompilationEngine:
     def compile_term(self, token: (str, str)) -> None:
         self.add_parent_node("term")
         tag, value = token
-        self.write_to_xml(token)
-
         next_tag, next_value = next_token = self.get_token(self.token_idx + 1)
 
         if tag == "integerConstant":
@@ -487,19 +435,16 @@ class CompilationEngine:
             self.compile_subroutine_call(token)
         elif tag == "identifier" and next_token == ("symbol", "("):
             self.token_idx += 1
-            self.write_to_xml(self.get_token())
             self.compile_expression(self.get_token(), [("symbol", ")")])
             token = self.get_token()
             assert token == ("symbol", ")")
         elif tag == "identifier" and next_token == ("symbol", "["):
             self.writer.push_variable(self.symbol_table.find_symbol(value))
-            self.write_to_xml(next_token)
             self.token_idx += 2
             self.compile_expression(self.get_token(), [("symbol", "]")])
             
             token = self.get_token()
             assert token == ("symbol", "]")
-            self.write_to_xml(token)
 
             self.writer.perform_operation("+")
             self.writer.pop_to(("", "", "pointer", 1))
@@ -514,7 +459,6 @@ class CompilationEngine:
 
             token = self.get_token()
             assert token == ("symbol", ")")
-            self.write_to_xml(token)
 
         elif tag == "symbol" and value in self.unary_op:
             self.token_idx += 1
@@ -524,9 +468,6 @@ class CompilationEngine:
                 self.writer.perform_operation("neg")
             else:
                 self.writer.perform_operation(value)
-
-        elif tag == "keyword":
-            self.write_to_xml(token)
 
         self.pop_parent_node()
 
@@ -548,40 +489,5 @@ class CompilationEngine:
                 continue
 
             self.token_idx += 1
-
-        # tree = ET.ElementTree(root)
-        # tree.write(self.output_filename)
-        # self.prettify_xml(self.output_filename)
-
-        # TODO: remove
-        for table in self.symbol_table.tables:
-            print(table)
         
         self.writer.close()
-
-
-    def prettify_xml(self, file_path):
-        # Parse the XML file
-        tree = ET.parse(file_path)
-        root = tree.getroot()
-
-        # Expand empty tags
-        self.expand_empty_tags(root)
-
-        # Convert to string
-        rough_string = ET.tostring(root, 'utf-8')
-
-        # Pretty print with minidom
-        parsed = parseString(rough_string)
-        pretty_xml = parsed.toprettyxml(indent="  ")  # Two spaces for indentation
-        
-        # Write to output file
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(pretty_xml.split("\n")[1:]))
-
-    def expand_empty_tags(self, element):
-        for child in element:
-            self.expand_empty_tags(child)  # Process children recursively
-        
-        if not element.text and not list(element):  # If the tag is empty
-            element.text = "\n"  # Add a newline to force expansion
