@@ -444,6 +444,7 @@ class CompilationEngine:
             subroutine_name = var[1]
             n_args += 1
         else:
+            self.writer.push("pointer", 0)
             subroutine_name = value
 
         self.token_idx += 1

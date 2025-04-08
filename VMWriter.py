@@ -33,6 +33,8 @@ class VMWriter:
     def push(self, tag: str, value: str) -> None:
         if tag == "integerConstant":
             self.write(f'push constant {value}')
+        else:
+            self.write(f'push {tag} {value}')
 
     
     def push_variable(self, symbol_tuple) -> None:
@@ -100,9 +102,7 @@ class VMWriter:
     
     def call(self, func_name, n_args, class_name="") -> None:
         if len(func_name.split(".")) == 1:
-            self.write("push pointer 0")
-            n_args += 1
-            self.write(f'call {class_name}.{func_name} {n_args}')
+            self.write(f'call {class_name}.{func_name} {n_args + 1}')
         else:
             self.write(f'call {func_name} {n_args}')
     
