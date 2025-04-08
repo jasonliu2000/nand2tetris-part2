@@ -81,12 +81,30 @@ class VMWriter:
             self.write(VMWriter.operations[symbol])
 
     
-    def declare_func(self, func_name, local_vars) -> None:
-        self.write(f'function {func_name} {local_vars}')
+    def declare_constructor(self, class_name, func_name, fields_count, local_vars) -> None:
+        self.write(f'function {class_name}.{func_name} {local_vars}')
+        self.write(f'push constant {fields_count}')
+        self.call("Memory.alloc", 1)
+        self.write("pop pointer 0") # THIS is set to the current object
+    
+
+    def declare_method(self, class_name, func_name, local_vars) -> None:
+        self.write(f'function {class_name}.{func_name} {local_vars}')
+        self.push_variable(("", "", "argument", 0))
+        self.pop_to(("", "", "pointer", 0))
+
+    
+    def declare_func(self, class_name, func_name, local_vars) -> None:
+        self.write(f'function {class_name}.{func_name} {local_vars}')
     
     
-    def call(self, func_name, n_args) -> None:
-        self.write(f'call {func_name} {n_args}')
+    def call(self, func_name, n_args, class_name="") -> None:
+        if len(func_name.split(".")) == 1:
+            self.write("push pointer 0")
+            n_args += 1
+            self.write(f'call {class_name}.{func_name} {n_args}')
+        else:
+            self.write(f'call {func_name} {n_args}')
     
 
     def return_func(self) -> None:

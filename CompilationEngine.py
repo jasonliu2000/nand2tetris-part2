@@ -132,8 +132,6 @@ class CompilationEngine:
 
         if subroutine_type == "method":
             self.symbol_table.add_symbol(("this", self.class_name, "argument"))
-            self.writer.push_variable(("", "", "argument", 0))
-            self.writer.pop_to(("", "", "pointer", 0))
 
         if token != ("symbol", ")"):
             self.compile_parameters(token)
@@ -165,7 +163,13 @@ class CompilationEngine:
                 _, property_type = token = self.get_token()
 
             if not func_declared:
-                self.writer.declare_func(f'{self.class_name}.{func_name}', self.symbol_table.get_local_vars_count())
+                if subroutine_type == "constructor":
+                    fields_count = self.symbol_table.get_fields_count()
+                    self.writer.declare_constructor(self.class_name, func_name, fields_count, self.symbol_table.get_local_vars_count())
+                elif subroutine_type == "method":
+                    self.writer.declare_method(self.class_name, func_name, self.symbol_table.get_local_vars_count())
+                else:
+                    self.writer.declare_func(self.class_name, func_name, self.symbol_table.get_local_vars_count())
                 func_declared = True
 
             self.compile_statements()
@@ -432,10 +436,13 @@ class CompilationEngine:
     def compile_subroutine_call(self, token: (str, str)) -> None:
         tag, value = token
 
-        subroutine_name = ""
+        subroutine_name, n_args = "", 0
         var = self.symbol_table.find_symbol(value)
-        if var:
+        next_token = self.get_token(self.token_idx + 1)
+        if next_token == ("symbol", ".") and var:
             self.writer.push_variable(var)
+            subroutine_name = var[1]
+            n_args += 1
         else:
             subroutine_name = value
 
@@ -443,8 +450,7 @@ class CompilationEngine:
         _, val = token = self.get_token()
 
         while token != ("symbol", "("):
-            if val != "." or not var:
-                subroutine_name += val
+            subroutine_name += val
 
             self.write_to_xml(token)
             self.token_idx += 1
@@ -453,12 +459,12 @@ class CompilationEngine:
         self.write_to_xml(token)
         self.token_idx += 1
             
-        n_args = self.compile_expression_list(self.get_token())
+        n_args += self.compile_expression_list(self.get_token())
         token = self.get_token()
         assert token == ("symbol", ")")
         self.write_to_xml(token)
 
-        self.writer.call(subroutine_name, n_args)
+        self.writer.call(subroutine_name, n_args, self.class_name)
 
     
     def compile_term(self, token: (str, str)) -> None:

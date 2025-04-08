@@ -37,3 +37,6 @@ class SymbolTable:
 
     def get_local_vars_count(self) -> int:
         return len(self.subroutine_symbols["local"])
+
+    def get_fields_count(self) -> int:
+        return len(self.class_symbols["field"])
