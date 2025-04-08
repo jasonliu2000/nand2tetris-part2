@@ -318,7 +318,7 @@ class CompilationEngine:
             is_array = True
             self.writer.push_variable(self.symbol_table.find_symbol(var_name))
             self.next_token()
-            self.compile_expression(self.get_token(), [("symbol", "]")])
+            self.compile_expression(self.get_token())
             
             assert self.get_token() == ("symbol", "]")
 
@@ -438,14 +438,14 @@ class CompilationEngine:
             self.compile_subroutine_call(token)
         elif tag == "identifier" and next_token == ("symbol", "("):
             self.next_token()
-            self.compile_expression(self.get_token(), [("symbol", ")")])
+            self.compile_expression(self.get_token())
             token = self.get_token()
             assert token == ("symbol", ")")
         elif tag == "identifier" and next_token == ("symbol", "["):
             self.writer.push_variable(self.symbol_table.find_symbol(value))
             self.next_token()
             self.next_token()
-            self.compile_expression(self.get_token(), [("symbol", "]")])
+            self.compile_expression(self.get_token())
             
             token = self.get_token()
             assert token == ("symbol", "]")
