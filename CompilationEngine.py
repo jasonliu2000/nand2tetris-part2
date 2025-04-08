@@ -443,8 +443,10 @@ class CompilationEngine:
             self.writer.push_variable(var)
             subroutine_name = var[1]
             n_args += 1
-        else:
+        elif next_token != ("symbol", "."):
             self.writer.push("pointer", 0)
+            subroutine_name = value
+        else:
             subroutine_name = value
 
         self.token_idx += 1
