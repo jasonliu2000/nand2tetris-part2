@@ -17,7 +17,7 @@ class Sys {
         do Screen.init();
 
         do Main.main();
-        do halt();
+        do Sys.halt();
         return;
     }
 
@@ -49,6 +49,7 @@ class Sys {
         do Output.printInt(errorCode);
         do Output.printString(">");
         do Output.println();
+        do Sys.halt();
         return;
     }
 }

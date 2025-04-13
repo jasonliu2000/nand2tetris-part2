@@ -4,6 +4,7 @@ class Screen {
 
     function void init() {
         let screen = 16384;
+        return;
     }
 
     function void clearScreen() {
@@ -44,7 +45,7 @@ class Screen {
         let dx = x2 - x1;
 
         if (dx = 0) {
-            do drawVerticalLine(x1, y1, y2);
+            do Screen.drawVerticalLine(x1, y1, y2);
             return;
         }
 
@@ -58,7 +59,7 @@ class Screen {
         }
 
         if (dy = 0) {
-            do drawHorizontalLine(y1, x1, x2);
+            do Screen.drawHorizontalLine(y1, x1, x2);
             return;
         }
 
@@ -73,7 +74,7 @@ class Screen {
         }
 
         while ((a < dx + 1 & dy < 0 & b > dy + yInc) | (a < dx + 1 & dy > 0 & b < dy + yInc)) {
-            do drawPixel(x1 + a, y1 + b);
+            do Screen.drawPixel(x1 + a, y1 + b);
             if (diff > 0 & dy > 0 | diff < 0 & dy < 0) {
                 let a = a + 1;
                 let diff = diff - dy;
@@ -95,7 +96,7 @@ class Screen {
         }
 
         while (y1 < y2 + 1) {
-            do drawPixel(x, y1);
+            do Screen.drawPixel(x, y1);
             let y1 = y1 + 1;
         }
 
@@ -111,7 +112,7 @@ class Screen {
         }
 
         while (x1 < x2 + 1) {
-            do drawPixel(x1, y);
+            do Screen.drawPixel(x1, y);
             let x1 = x1 + 1;
         }
 
@@ -119,10 +120,10 @@ class Screen {
     }
 
     function void drawRectangle(int x1, int y1, int x2, int y2) {
-        do drawHorizontalLine(y1, x1, x2);
-        do drawHorizontalLine(y2, x1, x2);
-        do drawVerticalLine(x1, y1, y2);
-        do drawVerticalLine(x2, y1, y2);
+        do Screen.drawHorizontalLine(y1, x1, x2);
+        do Screen.drawHorizontalLine(y2, x1, x2);
+        do Screen.drawVerticalLine(x1, y1, y2);
+        do Screen.drawVerticalLine(x2, y1, y2);
         return;
     }
 
@@ -131,7 +132,7 @@ class Screen {
         let y = cy + r;
 
         while (y > cy - r - 1) {
-            do drawHorizontalLine(y, cx - Math.sqrt(r*r - (y*y)), cx + Math.sqrt(r*r - (y*y)));
+            do Screen.drawHorizontalLine(y, cx - Math.sqrt(r*r - (y*y)), cx + Math.sqrt(r*r - (y*y)));
             let y = y - 1;
         }
 

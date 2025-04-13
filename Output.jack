@@ -31,7 +31,7 @@ class Output {
         let cursorX = 0;
         let cursorY = 0;
 
-        do initMap();
+        do Output.initMap();
         return;
     }
 
@@ -194,10 +194,10 @@ class Output {
      *  and advances the cursor one column forward. */
     function void printChar(char c) {
         var Array bitmap;
-        var boolean mask;
+        var int mask;
         var int address, i, bitmapRow, bitmapMask;
 
-        let bitmap = getMap(c);
+        let bitmap = Output.getMap(c);
         let i = 0;
         let address = (cursorY * 11 + i) * 32 + (cursorX / 2);
 
@@ -226,7 +226,7 @@ class Output {
         if (cursorX < 64) {
             let cursorX = cursorX + 1;
         } else {
-            do println();
+            do Output.println();
         }
 
         return;
@@ -240,13 +240,13 @@ class Output {
         let i = 0;
 
         while (i < strLength) {
-            do printChar(s.charAt(i));
+            do Output.printChar(s.charAt(i));
             let i = i + 1;
 
             if (cursorX < 64) {
                 let cursorX = cursorX + 1;
             } else {
-                do println();
+                do Output.println();
             }
         }
 
@@ -260,7 +260,7 @@ class Output {
         let str = String.new(20);
         
         do str.setInt(i);
-        do printString(str);
+        do Output.printString(str);
         return;
     }
 

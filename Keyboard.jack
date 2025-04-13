@@ -47,13 +47,13 @@ class Keyboard {
     function char readChar() {
         var char c;
 
-        while (keyPressed() = 0) {
+        while (Keyboard.keyPressed() = 0) {
             // do nothing
         }
 
-        let c = keyPressed();
+        let c = Keyboard.keyPressed();
 
-        while (~(keyPressed() = 0)) {
+        while (~(Keyboard.keyPressed() = 0)) {
             // do nothing
         }
 
@@ -74,7 +74,7 @@ class Keyboard {
         let str = String.new(100); // 100 is arbitrary
 
         while (true) {
-            let c = readChar();
+            let c = Keyboard.readChar();
 
             // if c is newline
             if (c = 128) {
@@ -103,7 +103,7 @@ class Keyboard {
      */
     function int readInt(String message) {
         var String str;
-        let str = readLine(message);
+        let str = Keyboard.readLine(message);
         return str.intValue();
     }
 }

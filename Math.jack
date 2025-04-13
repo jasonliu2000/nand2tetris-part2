@@ -34,7 +34,7 @@ class Math {
         let j = 0
 
         while (j < 16) {
-            if (bit(y, j)) {
+            if (Math.bit(y, j)) {
                 let sum = sum + shiftedX;
             }
             
@@ -52,8 +52,8 @@ class Math {
         let negative = false;
 
         if (x < 0 | y < 0) {
-            let x = abs(x);
-            let y = abs(y);
+            let x = Math.abs(x);
+            let y = Math.abs(y);
             let negative = true;
         }
 
@@ -61,7 +61,7 @@ class Math {
             return 0;
         }
 
-        let q = divide(x, y * 2);
+        let q = Math.divide(x, y * 2);
         if (x - (2 * q * y) < y) {
             let result = q * 2;
         } else {
@@ -98,8 +98,8 @@ class Math {
         let j = x / 2;
 
         while (j > -1) {
-            if (y + pow(2, j) < x + 1 & y + pow(2, j) > 0) {
-                let y = y + pow(2, j);
+            if (y + Math.pow(2, j) < x + 1 & y + Math.pow(2, j) > 0) {
+                let y = y + Math.pow(2, j);
             }
 
             let j = j - 1;
