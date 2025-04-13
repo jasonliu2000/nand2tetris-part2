@@ -38,7 +38,7 @@ class Math {
                 let sum = sum + shiftedX;
             }
             
-            let shiftedX = shiftedX * 2;
+            let shiftedX = shiftedX + shiftedX;
             let j = j + 1;
         }
 
