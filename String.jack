@@ -94,15 +94,19 @@ class String {
         var char c;
 
         let lastDigit = val - (10 * (val / 10));
-        let c = lastDigit + 48; // where ASCII code of an int = int + 48
-
+        let c = String.getCharFromAscii(lastDigit);
         if (val < 10) {
-            do str.appendChar(c);
+            do appendChar(c);
         } else {
-            do recursivelySetInt(val / 10).appendChar(c);
+            do recursivelySetInt(val / 10);
+            do appendChar(c);
         }
 
         return;
+    }
+
+    function char getCharFromAscii(int val) {
+        return val + 48;
     }
 
     /** Returns the new line character. */
