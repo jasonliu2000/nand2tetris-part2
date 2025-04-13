@@ -1,0 +1,141 @@
+class Screen {
+    static boolean black;
+    static Array screen;
+
+    function void init() {
+        let screen = 16384;
+    }
+
+    function void clearScreen() {
+        var int i;
+        let i = 0;
+        while (i < 8192) { // 8192 words in the RAM are allocated to the screen
+            do Memory.poke(screen[i], 0);
+            let i = i + 1;
+        }
+
+        return;
+    }
+
+    function void setColor(boolean b) {
+        let black = b;
+        return;
+    }
+
+    function void drawPixel(int x, int y) {
+        var int address, value, newValue, pixelLocation;
+        let address = 32 * y + (x / 16);
+        let value = Memory.peek(address);
+        let pixelLocation = Math.pow(2, x & 15); // 15 is a bitmask for us to get x % 16
+
+        if (black) {
+            let newValue = value | pixelLocation;
+        } else {
+            let newValue = value & ~pixelLocation;
+        }
+
+        do Memory.poke(address, newValue);
+        return;
+    }
+
+    function void drawLine(int x1, int y1, int x2, int y2) {
+        var int a, b, dy, dx, diff, temp, yInc;
+        let dy = y2 - y1;
+        let dx = x2 - x1;
+
+        if (dx = 0) {
+            do drawVerticalLine(x1, y1, y2);
+            return;
+        }
+
+        if (x1 > x2) {
+            let temp = x1;
+            let x1 = x2;
+            let x2 = temp;
+            let temp = y1;
+            let y1 = y2;
+            let y2 = temp;
+        }
+
+        if (dy = 0) {
+            do drawHorizontalLine(y1, x1, x2);
+            return;
+        }
+
+        let a = 0;
+        let b = 0;
+        let diff = 0;
+
+        if (dy < 0) {
+            let yInc = -1;
+        } else {
+            let yInc = 1;
+        }
+
+        while ((a < dx + 1 & dy < 0 & b > dy + yInc) | (a < dx + 1 & dy > 0 & b < dy + yInc)) {
+            do drawPixel(x1 + a, y1 + b);
+            if (diff > 0 & dy > 0 | diff < 0 & dy < 0) {
+                let a = a + 1;
+                let diff = diff - dy;
+            } else {
+                let b = b + yInc;
+                let diff = diff - dx;
+            }
+        }
+
+        return;
+    }
+
+    function void drawVerticalLine(int x, int y1, int y2) {
+        var int temp;
+        if (y2 < y1) {
+            let temp = y2;
+            let y2 = y1;
+            let y1 = temp;
+        }
+
+        while (y1 < y2 + 1) {
+            do drawPixel(x, y1);
+            let y1 = y1 + 1;
+        }
+
+        return;
+    }
+
+    function void drawHorizontalLine(int y, int x1, int x2) {
+        var int temp;
+        if (x1 > x2) {
+            let temp = x2;
+            let x2 = x1;
+            let x1 = temp;
+        }
+
+        while (x1 < x2 + 1) {
+            do drawPixel(x1, y);
+            let x1 = x1 + 1;
+        }
+
+        return;
+    }
+
+    function void drawRectangle(int x1, int y1, int x2, int y2) {
+        do drawHorizontalLine(y1, x1, x2);
+        do drawHorizontalLine(y2, x1, x2);
+        do drawVerticalLine(x1, y1, y2);
+        do drawVerticalLine(x2, y1, y2);
+        return;
+    }
+
+    function void drawCircle(int cx, int cy, int r) {
+        var int y;
+        let y = cy + r;
+
+        while (y > cy - r - 1) {
+            do drawHorizontalLine(y, cx - Math.sqrt(r*r - (y*y)), cx + Math.sqrt(r*r - (y*y)));
+            let y = y - 1;
+        }
+
+        return;
+    }
+
+}

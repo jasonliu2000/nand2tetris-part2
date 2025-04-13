@@ -1,0 +1,127 @@
+class Math {
+    static Array twoToThe;
+
+    function void init() {
+        var int i;
+        
+        let twoToThe = Array.new(16);
+        let i = 0;
+        while (i < 16) {
+            if (i = 0) {
+                let twoToThe[0] = 1;
+            } else {
+                let twoToThe[i] = twoToThe[i-1] * 2;
+            }
+            
+            let i = i + 1;
+        }
+
+        return;
+    }
+
+    function int abs(int x) {
+        if (x < 0) {
+            return -x;
+        }
+
+        return x;
+    }
+    
+    function int multiply(int x, int y) {
+        var int sum, shiftedX, j;
+        let sum = 0;
+        let shiftedX = x;
+        let j = 0
+
+        while (j < 16) {
+            if (bit(y, j)) {
+                let sum = sum + shiftedX;
+            }
+            
+            let shiftedX = shiftedX * 2;
+            let j = j + 1;
+        }
+
+        return sum;
+    }
+    
+    function int divide(int x, int y) {
+        var int q, result;
+        var boolean negative;
+
+        let negative = false;
+
+        if (x < 0 | y < 0) {
+            let x = abs(x);
+            let y = abs(y);
+            let negative = true;
+        }
+
+        if (y > x | y < 0) {
+            return 0;
+        }
+
+        let q = divide(x, y * 2);
+        if (x - (2 * q * y) < y) {
+            let result = q * 2;
+        } else {
+            let result = q * 2 + 1;
+        }
+
+        if (negative) {
+            return -result;
+        } else {
+            return result;
+        }
+    }
+
+    function int min(int x, int y) {
+        if (x < y) {
+            return x;
+        }
+
+        return y;
+    }
+
+    function int max(int x, int y) {
+        var int maxNum;
+        if (x > y) {
+            return x;
+        }
+
+        return y;
+    }
+
+    function int sqrt(int x) {
+        var int y, j;
+        let y = 0;
+        let j = x / 2;
+
+        while (j > -1) {
+            if (y + pow(2, j) < x + 1 & y + pow(2, j) > 0) {
+                let y = y + pow(2, j);
+            }
+
+            let j = j - 1;
+        }
+
+        return y;
+    }
+
+    function int pow(int base, int exp) {
+        var int result;
+        let result = 1;
+
+        while (exp > 0) {
+            let result = result * base;
+            let exp = exp - 1;
+        }
+
+        return result;
+    }
+
+    function boolean bit(int x, int i) {
+        return ~((x & twoToThe[i]) = 0);
+    }
+
+}

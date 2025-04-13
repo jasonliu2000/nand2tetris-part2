@@ -1,0 +1,75 @@
+class Memory {
+    static Array ram, heap;
+    static int freeList;
+
+    function void init() {
+        let ram = 0;
+        let heap = 2048;
+        let freeList = 2048;
+
+        let heap[0] = 0;
+        let heap[1] = 14335;
+        return;
+    }
+
+    function int peek(int address) {
+        return ram[address];
+    }
+
+    function void poke(int address, int value) {
+        let ram[address] = value;
+        return;
+    }
+
+    function int alloc(int size) {
+        var int curr, block, temp;
+        var boolean terminate, found;
+
+        let curr = freeList;
+        let block = freeList + 2;
+        let temp = 0;
+        let terminate = false;
+        let found = false;
+
+        while (~terminate & ~found) {
+            if ((heap[curr + 1] - 1) > size) {
+                let found = true;
+                let temp = heap[curr];
+                let heap[curr + 1] = heap[curr + 1] - (size + 2);
+                let block = (curr + heap[curr + 1]) + 4;
+                let heap[curr] = block - 2;
+            }
+
+            if (heap[curr] = 0) {
+                let terminate = true;
+            }
+
+            let curr = heap[curr];
+        }
+
+        // if (~found) {
+        //     do deFrag();
+        // }
+
+        // if found:
+        let heap[block - 1] = size;
+        let heap[block - 2] = temp;
+        return block;
+    }
+
+    function void deAlloc(int object) {
+        var int p1, p2;
+        let p1 = freeList;
+        let p2 = freeList;
+
+        while (~(p1 = object)) {
+            let p2 = p1;
+            let p1 = heap[p1];
+        }
+
+        let heap[p2] = heap[p1];
+        return;
+    }
+
+    // function void deFrag() {}
+}
