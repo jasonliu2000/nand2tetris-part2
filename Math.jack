@@ -31,7 +31,7 @@ class Math {
         var int sum, shiftedX, j;
         let sum = 0;
         let shiftedX = x;
-        let j = 0
+        let j = 0;
 
         while (j < 16) {
             if (Math.bit(y, j)) {
